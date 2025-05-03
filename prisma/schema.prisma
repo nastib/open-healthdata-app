@@ -1,0 +1,152 @@
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+    schemas  = ["auth", "hdb"]
+}
+
+// Supabase Auth users table
+model Users {
+    id                  String                @id @db.Uuid
+    dataEntry           DataEntry[]
+    organizationElement OrganizationElement[]
+    profile             Profile?
+
+    @@map("users")
+    @@schema("auth")
+}
+
+model DataCategory {
+    id          Int         @id @default(autoincrement())
+    code        String      @unique
+    designation String?
+    createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+    variable    Variable[]
+    indicator   Indicator[]
+    dataEntry   DataEntry[]
+
+    @@map("data_category")
+    @@schema("hdb")
+}
+
+model DataSource {
+    id          Int          @id @default(autoincrement())
+    createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+    designation String?
+    type        String?
+    parentId    Int?
+    parent      DataSource?  @relation("DataSourceHierarchy", fields: [parentId], references: [id])
+    children    DataSource[] @relation("DataSourceHierarchy")
+    variable    Variable[]
+
+    @@map("data_source")
+    @@schema("hdb")
+}
+
+model OrganizationElement {
+    id            Int         @id @default(autoincrement())
+    created_at    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+    code          String      @unique
+    level         String?
+    designation   String?
+    acronym       String?
+    gps           String? // Needs clarification, treating as text for now
+    zone          String?
+    department    String?
+    dataManagerId String?     @db.Uuid
+    dataManager   Users?      @relation(fields: [dataManagerId], references: [id])
+    profile       Profile[]
+    dataEntry     DataEntry[]
+
+    @@map("organization_element")
+    @@schema("hdb")
+}
+
+model Variable {
+    id           Int          @id @default(autoincrement())
+    created_at   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+    code         String       @unique
+    designation  String?
+    type         Json         @default("[]") // Intended for list of types/units?
+    dataSourceId Int
+    dataSource   DataSource   @relation(fields: [dataSourceId], references: [id])
+    categoryCode String
+    dataCategory DataCategory @relation(fields: [categoryCode], references: [code])
+    frequency    String?
+    level        String?
+    dataEntry    DataEntry[]
+
+    @@map("variable")
+    @@schema("hdb")
+}
+
+model Profile {
+    id                      Int                  @id @default(autoincrement())
+    createdAt               DateTime             @default(now()) @db.Timestamptz(6)
+    theme                   String?
+    roles                   Json                 @default("[]") // Intended for array of role codes/IDs
+    active                  Boolean              @default(true)
+    userId                  String               @unique @db.Uuid
+    user                    Users                @relation(fields: [userId], references: [id])
+    organizationElementCode String?
+    organizationElement     OrganizationElement? @relation(fields: [organizationElementCode], references: [code])
+
+    @@map("profile")
+    @@schema("hdb")
+}
+
+model Role {
+    id          Int      @id @default(autoincrement())
+    createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+    code        String   @unique
+    designation String?
+
+    @@map("role")
+    @@schema("hdb")
+}
+
+model Indicator {
+    id                  Int          @id @default(autoincrement())
+    createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+    code                String       @unique
+    designation         String?
+    definition          String?
+    goal                String?
+    formula             String?
+    categoryCode        String       @map("category_code")
+    dataCategory        DataCategory @relation(fields: [categoryCode], references: [code])
+    level               String?
+    calculationMethod   String?      @map("calculation_method")
+    collectionFrequency String?      @map("collection_frequency")
+    constraints         String?
+    interpretation      String?
+    example             String?
+
+    @@map("indicator")
+    @@schema("hdb")
+}
+
+model DataEntry {
+    id                      Int                 @id @default(autoincrement())
+    createdAt               DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+    variableCode            String              @map("variable_code")
+    variable                Variable            @relation(fields: [variableCode], references: [code], onDelete: Cascade)
+    value                   Float
+    valid                   Boolean?
+    year                    Int?
+    updatedAt               DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+    categoryCode            String              @map("category_code")
+    dataCategory            DataCategory        @relation(fields: [categoryCode], references: [code])
+    organizationElementCode String              @map("organization_element_code")
+    organizationElement     OrganizationElement @relation(fields: [organizationElementCode], references: [code])
+    userId                  String?             @db.Uuid
+    user                    Users?              @relation(fields: [userId], references: [id])
+    period                  DateTime            @db.Date
+
+    @@map("data_entry")
+    @@schema("hdb")
+}

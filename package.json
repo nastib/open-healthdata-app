@@ -1,0 +1,52 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/icon": "1.12.0",
+    "@nuxtjs/supabase": "1.5.0",
+    "@prisma/client": "6.6.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "@tailwindcss/vite": "^4.1.4",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vueuse/nuxt": "^13.1.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.503.0",
+    "nuxt": "^3.17.1",
+    "reka-ui": "^2.2.0",
+    "shadcn-nuxt": "2.1.0",
+    "shadcn-vue": "^2.1.0",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss": "^4.1.4",
+    "tailwindcss-animate": "^1.0.7",
+    "tw-animate-css": "^1.2.8",
+    "vite": "^6.3.3",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@formkit/addons": "^1.6.9",
+    "@formkit/core": "^1.6.9",
+    "@formkit/icons": "^1.6.9",
+    "@formkit/nuxt": "^1.6.9",
+    "@formkit/pro": "^0.127.23",
+    "@formkit/themes": "^1.6.9",
+    "@formkit/vue": "^1.6.9",
+    "@nuxtjs/tailwindcss": "^6.13.2",
+    "@pinia/nuxt": "^0.11.0",
+    "@tanstack/vue-table": "^8.21.3",
+    "@vite-pwa/nuxt": "^1.0.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "prisma": "^6.6.0",
+    "typescript": "^5.8.3"
+  }
+}
