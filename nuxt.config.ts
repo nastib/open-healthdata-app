@@ -7,7 +7,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: [
     '@pinia/nuxt',
-    '@formkit/nuxt',
     '@vueuse/nuxt',
     'shadcn-nuxt',
     '@nuxt/icon',
@@ -29,9 +28,6 @@ export default defineNuxtConfig({
      * @default "./components/ui"
      */
     componentDir: './components/ui'
-  },
-  formkit: {
-    configFile: './formkit.config.ts',
   },
   supabase: {
     redirect: false,

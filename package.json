@@ -33,14 +33,6 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@formkit/addons": "^1.6.9",
-    "@formkit/core": "^1.6.9",
-    "@formkit/icons": "^1.6.9",
-    "@formkit/nuxt": "^1.6.9",
-    "@formkit/pro": "^0.127.23",
-    "@formkit/themes": "^1.6.9",
-    "@formkit/vue": "^1.6.9",
-    "@nuxtjs/tailwindcss": "^6.13.2",
     "@pinia/nuxt": "^0.11.0",
     "@tanstack/vue-table": "^8.21.3",
     "@vite-pwa/nuxt": "^1.0.0",

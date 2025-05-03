@@ -10,7 +10,6 @@ const config: Config = {
     './plugins/**/*.{js,ts}',
     './app.vue',
     './error.vue',
-    "./formkit.theme.ts" // <-- add your theme file
   ],
   theme: {
   	container: {

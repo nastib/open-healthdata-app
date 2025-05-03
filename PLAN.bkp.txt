@@ -24,6 +24,7 @@ This document outlines a phased, step-by-step plan for generating a complete, pr
 - **UI Component Library:** Shadcn-vue
 - **ORM:** Prisma
 - **State Management:** Pinia
+- **Form Handling:** FormKit
 - **Data Tables:** TanStack Tables
 - **Containerization:** Docker
 - **PWA:** Progressive Web App features (Manifest, Service Worker)
@@ -214,6 +215,7 @@ I will proceed through the following steps sequentially. Upon completing a step,
       - Install and configure Tailwind CSS v4.
       - Install and configure Shadcn-vue (manual setup).
       - Install and configure Pinia (`@pinia/nuxt`).
+      - Install and configure FormKit (`@formkit/nuxt`).
       - Install and configure TanStack Tables (`@tanstack/vue-table`).
       - Install and configure Prisma (`prisma`).
       - Install and configure a PWA module (e.g., `@vite-pwa/nuxt`).
