@@ -6,32 +6,17 @@ generator client {
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
-    schemas  = ["auth", "hdb"]
-}
-
-model Users {
-    instanceId String?   @map("instance_id") @db.Uuid
-    createdAt  DateTime? @default(now()) @map("created_at")
-    id         String    @id @db.Uuid
-    role       String?   @db.VarChar(255)
-    email      String?   @db.VarChar(255)
-
-    DataEntry            DataEntry[]
-    organization_element OrganizationElement[]
-    profile              Profile?
-
-    @@index([instanceId])
-    @@map("users")
-    @@schema("auth")
+    schemas  = ["hdb"]
 }
 
 model DataCategory {
-    id        Int         @id @default(autoincrement())
-    code      String      @unique
-    createdAt DateTime?   @default(now()) @map("created_at")
-    dataEntry DataEntry[]
-    indicator Indicator[]
-    variable  Variable[]
+    id          Int         @id @default(autoincrement())
+    code        String      @unique
+    designation String?
+    createdAt   DateTime?   @default(now()) @map("created_at") @db.Timestamptz(6)
+    dataEntry   DataEntry[]
+    indicator   Indicator[]
+    variable    Variable[]
 
     @@map("data_category")
     @@schema("hdb")
@@ -39,32 +24,32 @@ model DataCategory {
 
 model DataEntry {
     id                      Int                 @id @default(autoincrement())
-    createdAt               DateTime?           @default(now()) @map("created_at")
+    createdAt               DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
     variableCode            String              @map("variable_code")
     value                   Float?              @db.Real
     valid                   Boolean?
     year                    Int?
-    updatedAt               DateTime?           @default(now()) @map("updated_at")
+    updatedAt               DateTime?           @default(now()) @map("updated_at") @db.Timestamptz(6)
     categoryCode            String              @map("category_code")
     organizationElementCode String              @map("organization_element_code")
-    userId                  String?             @db.Uuid
+    profileId               Int?
     period                  DateTime?           @db.Date
     DataCategory            DataCategory        @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
     organizationElement     OrganizationElement @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
-    users                   Users?              @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    profile                 Profile?            @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
     variable                Variable            @relation(fields: [variableCode], references: [code], onDelete: Cascade, onUpdate: NoAction)
 
-    @@index([categoryCode], map: "idx_DataEntry_category_code")
-    @@index([organizationElementCode], map: "idx_DataEntry_organization_element_code")
-    @@index([userId], map: "idx_DataEntry_user_id")
-    @@index([variableCode], map: "idx_DataEntry_variable_code")
+    @@index([categoryCode], map: "idx_data_entry_category_code")
+    @@index([organizationElementCode], map: "idx_data_entry_organization_element_code")
+    @@index([profileId], map: "idx_data_entry_profile_id")
+    @@index([variableCode], map: "idx_data_entry_variable_code")
     @@map("data_entry")
     @@schema("hdb")
 }
 
 model DataSource {
     id              Int          @id @default(autoincrement())
-    createdAt       DateTime?    @default(now()) @map("created_at")
+    createdAt       DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
     designation     String?
     type            String?
     parentId        Int?
@@ -72,13 +57,13 @@ model DataSource {
     otherDataSource DataSource[] @relation("dataSourceToDataSource")
     variable        Variable[]
 
-    @@map("data_source")
+    @@map("dataSource")
     @@schema("hdb")
 }
 
 model Indicator {
     id                  Int          @id @default(autoincrement())
-    createdAt           DateTime?    @default(now()) @map("created_at")
+    createdAt           DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
     code                String       @unique
     designation         String?
     definition          String?
@@ -91,7 +76,7 @@ model Indicator {
     constraints         String?
     interpretation      String?
     example             String?
-    DataCategory        DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+    dataCategory        DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
 
     @@index([categoryCode], map: "idx_indicator_category_code")
     @@map("indicator")
@@ -100,7 +85,7 @@ model Indicator {
 
 model OrganizationElement {
     id            Int         @id @default(autoincrement())
-    createdAt     DateTime?   @default(now()) @map("created_at")
+    createdAt     DateTime?   @default(now()) @map("created_at") @db.Timestamptz(6)
     code          String      @unique
     level         String?
     designation   String?
@@ -109,8 +94,7 @@ model OrganizationElement {
     zone          String?
     department    String?
     dataManagerId String?     @map("data_manager_id") @db.Uuid
-    DataEntry     DataEntry[]
-    users         Users?      @relation(fields: [dataManagerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    dataEntry     DataEntry[]
     profile       Profile[]
 
     @@map("organization_element")
@@ -119,15 +103,15 @@ model OrganizationElement {
 
 model Profile {
     id                      Int                  @id @default(autoincrement())
-    createdAt               DateTime?            @default(now()) @map("created_at")
+    createdAt               DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
     theme                   String?
+    avatar                  String?
     roles                   Json?                @default("[]")
     active                  Boolean              @default(true)
     userId                  String               @unique @map("user_id") @db.Uuid
     organizationElementCode String?              @map("organization_element_code")
     organizationElement     OrganizationElement? @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
-    users                   Users                @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
+    dataEntry              DataEntry[]
     @@index([organizationElementCode], map: "idx_profile_organization_element_code")
     @@map("profile")
     @@schema("hdb")
@@ -135,7 +119,7 @@ model Profile {
 
 model Role {
     id          Int       @id @default(autoincrement())
-    createdAt   DateTime? @default(now()) @map("created_at")
+    createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
     code        String    @unique
     designation String?
 
@@ -145,17 +129,17 @@ model Role {
 
 model Variable {
     id           Int          @id @default(autoincrement())
-    createdAt    DateTime?    @default(now()) @map("created_at")
+    createdAt    DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
     code         String       @unique
     designation  String?
     type         Json?        @default("[]")
-    dataSourceId Int
-    categoryCode String
+    dataSourceId Int          @map("data_source_id")
+    categoryCode String       @map("category_code")
     frequency    String?
     level        String?
-    DataEntry    DataEntry[]
-    DataCategory DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
-    DataSource   DataSource   @relation(fields: [dataSourceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    dataEntry    DataEntry[]
+    dataCategory DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+    dataSource   DataSource   @relation(fields: [dataSourceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
     @@index([categoryCode], map: "idx_variable_category_code")
     @@index([dataSourceId], map: "idx_variable_data_source_id")

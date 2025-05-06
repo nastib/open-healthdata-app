@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <Card class="w-96">
       <CardHeader>
         <CardTitle>Card Title</CardTitle>

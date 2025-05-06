@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   ],
   ssr: true, // if false use $fetch instead useFetch
   imports: {
-    autoImport: true,
+   autoImport: true,
   },
   css: ['~/assets/css/main.css'],
   shadcn: {
@@ -94,7 +94,7 @@ export default defineNuxtConfig({
         },
       ],
     },
-    //strategy: 'generateSW',
+    strategy: 'generateSW',
     registerType: 'autoUpdate',
   },
   vite: {
@@ -103,8 +103,14 @@ export default defineNuxtConfig({
     ],
   },
   runtimeConfig: {
+
+    BASE_URL: process.env.BASE_URL,
     public: {
-      FORMKIT_PRO_KEY: process.env.FORMKIT_PRO_KEY,
+      baseURL: process.env.BASE_URL || 'http://localhost:3000',
+      SUPABASE_KEY: process.env.SUPABASE_KEY,
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
+      DATABASE_URL: process.env.DATABASE_URL,
     }
   }
 })

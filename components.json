@@ -5,7 +5,7 @@
   "tailwind": {
     "config": "tailwind.config.ts",
     "css": "assets/css/main.css",
-    "baseColor": "stone",
+    "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
   },
