@@ -6,6 +6,7 @@
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button';
 const theme = useState('theme', () => 'light');
 
 const toggleTheme = () => {

@@ -49,6 +49,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { onClickOutside } from '@vueuse/core';
 
 /**
@@ -96,18 +98,18 @@ const handleLogout = async () => {
     isLoading.value = true;
 
     // Sign out from Supabase
-    const { error } = await auth.signOut();
+    //const { error } = await auth.signOut();
 
-    if (error) throw error;
+    //if (error) throw error;
 
     // Clear local auth state
     await authStore.logout();
 
     // Show success feedback
-    console.log('Logged out successfully');
+    //console.log('Logged out successfully');
 
     // Redirect to login page
-    await router.push('/auth/login');
+    await navigateTo('/auth/login');
   } catch (error) {
     console.error('Logout failed:', (error as AuthError).message);
   } finally {

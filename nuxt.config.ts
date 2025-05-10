@@ -13,28 +13,49 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase',
     '@vite-pwa/nuxt'
   ],
+  shadcn: {
+    componentDir: './components/ui'
+  },
   ssr: true, // if false use $fetch instead useFetch
   imports: {
    autoImport: true,
+   dirs: [
+     'composables',
+     'composables/*/*.{ts,js,mjs,mts}',
+     'utils',
+     'stores',
+     'stores/*/*.{ts,js,mjs,mts}',
+     'types',
+     'types/*/*.{ts,js,mjs,mts}',
+     'components/ui',
+     'components',
+     'components/*/*.{ts,js,mjs,mts}',
+     'layouts',
+     'layouts/*/*.{ts,js,mjs,mts}',
+     'middleware',
+     'middleware/*/*.{ts,js,mjs,mts}',
+     'pages',
+     'pages/*/*.{ts,js,mjs,mts}',
+     'plugins',
+     'plugins/*/*.{ts,js,mjs,mts}',
+     'server',
+     'server/*/*.{ts,js,mjs,mts}',
+     'utils/*/*.{ts,js,mjs,mts}',
+   ]
+  },
+  nitro: {
+    preset: 'node-server'
+  },
+  experimental: {
+    componentIslands: true,
   },
   css: ['~/assets/css/main.css'],
-  shadcn: {
-    /**
-     * Prefix for all the imported component
-     */
-    prefix: '',
-    /**
-     * Directory that the component lives in.
-     * @default "./components/ui"
-     */
-    componentDir: './components/ui'
-  },
   supabase: {
     redirect: false,
     // Options
     redirectOptions: {
       login: '/login',
-      callback: '/confirm',
+      callback: '/callback',
       include: undefined,
       exclude: [],
       saveRedirectToCookie: false,

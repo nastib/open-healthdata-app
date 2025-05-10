@@ -1,148 +1,228 @@
+/// Configuration for Prisma Client generation
 generator client {
     provider        = "prisma-client-js"
     previewFeatures = ["multiSchema"]
+    engineType      = "binary"
 }
 
+/// Database connection configuration
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
     schemas  = ["hdb"]
 }
 
+/// Represents a category for grouping related health data entries
+/// Categories organize indicators and variables into logical groups
 model DataCategory {
-    id          Int         @id @default(autoincrement())
-    code        String      @unique
+    id          Int       @id @default(autoincrement())
+    code        String    @unique
     designation String?
-    createdAt   DateTime?   @default(now()) @map("created_at") @db.Timestamptz(6)
-    dataEntry   DataEntry[]
-    indicator   Indicator[]
-    variable    Variable[]
+    createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+    dataEntries DataEntry[]
+    indicators  Indicator[]
+    variables   Variable[]
+
+    /// Maps to PostgreSQL table "data_category"
     @@map("data_category")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }
 
+/// Represents an individual health data measurement or observation
+/// Stores actual data values with metadata about collection context
 model DataEntry {
-    id                      Int                 @id @default(autoincrement())
-    createdAt               DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
-    variableCode            String              @map("variable_code")
-    value                   Float?              @db.Real
+    id                      Int       @id @default(autoincrement())
+    createdAt               DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+    variableCode            String    @map("variable_code")
+    value                   Float?    @db.Real
     valid                   Boolean?
     year                    Int?
-    updatedAt               DateTime?           @default(now()) @map("updated_at") @db.Timestamptz(6)
-    categoryCode            String              @map("category_code")
-    organizationElementCode String              @map("organization_element_code")
+    updatedAt               DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+    categoryCode            String    @map("category_code")
+    organizationElementCode String    @map("organization_element_code")
     profileId               Int?
-    period                  DateTime?           @db.Date
-    DataCategory            DataCategory        @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
-    organizationElement     OrganizationElement @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
-    profile                 Profile?            @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-    variable                Variable            @relation(fields: [variableCode], references: [code], onDelete: Cascade, onUpdate: NoAction)
+    period                  DateTime? @db.Date
 
+    DataCategory        DataCategory        @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+    organizationElement OrganizationElement @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+    profile             Profile?            @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    variable            Variable            @relation(fields: [variableCode], references: [code], onDelete: Cascade, onUpdate: NoAction)
+
+    /// Indexes for performance optimization
     @@index([categoryCode], map: "idx_data_entry_category_code")
     @@index([organizationElementCode], map: "idx_data_entry_organization_element_code")
     @@index([profileId], map: "idx_data_entry_profile_id")
     @@index([variableCode], map: "idx_data_entry_variable_code")
+    /// Maps to PostgreSQL table "data_entry"
     @@map("data_entry")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }
 
+/// Represents the source/origin of health data variables
+/// Can be hierarchical (e.g. national survey -> regional implementation)
 model DataSource {
-    id              Int          @id @default(autoincrement())
-    createdAt       DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
-    designation     String?
-    type            String?
-    parentId        Int?
-    dataSource      DataSource?  @relation("dataSourceToDataSource", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-    otherDataSource DataSource[] @relation("dataSourceToDataSource")
-    variable        Variable[]
+    id          Int       @id @default(autoincrement())
+    createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    designation String?
+    type        String?
+    parentId    Int?
 
-    @@map("dataSource")
+    dataSource       DataSource?  @relation("dataSourceToDataSource", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    otherDataSources DataSource[] @relation("dataSourceToDataSource")
+    variables        Variable[]
+
+    /// Maps to PostgreSQL table "dataSource"
+    @@map("data_source")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }
 
+/// Represents a health indicator or metric derived from data variables
+/// Includes metadata about calculation, interpretation and use
 model Indicator {
-    id                  Int          @id @default(autoincrement())
-    createdAt           DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
-    code                String       @unique
+    id                  Int       @id @default(autoincrement())
+    createdAt           DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    code                String    @unique
     designation         String?
     definition          String?
     goal                String?
     formula             String?
-    categoryCode        String       @map("category_code")
+    categoryCode        String    @map("category_code")
     level               String?
-    calculationMethod   String?      @map("calculation_method")
-    collectionFrequency String?      @map("collection_frequency")
+    calculationMethod   String?   @map("calculation_method")
+    collectionFrequency String?   @map("collection_frequency")
     constraints         String?
     interpretation      String?
     example             String?
-    dataCategory        DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
 
+    dataCategory DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+
+    /// Index for performance optimization
     @@index([categoryCode], map: "idx_indicator_category_code")
+    /// Maps to PostgreSQL table "indicator"
     @@map("indicator")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }
 
+/// Tracks all authentication-related events for security auditing
+model EventsLog {
+    id        Int      @id @default(autoincrement())
+    eventType String   @map("event_type")
+    userId    String?  @map("user_id")
+    ipHash    String?  @map("ip_hash")
+    userAgent String?  @map("user_agent")
+    location  Json?
+    metadata  Json?
+    createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    /// Indexes for common query patterns
+    @@index([eventType])
+    @@index([userId])
+    @@index([createdAt])
+    /// Maps to PostgreSQL table "auth_audit_log"
+    @@map("events_log")
+    /// Belongs to the "hdb" schema
+    @@schema("hdb")
+}
+
+/// Represents an organizational unit in the health system hierarchy
+/// Could be hospitals, clinics, districts, regions etc.
 model OrganizationElement {
     id            Int         @id @default(autoincrement())
     createdAt     DateTime?   @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
     code          String      @unique
     level         String?
     designation   String?
     acronym       String?
     gps           String?
-    zone          String?
     department    String?
     dataManagerId String?     @map("data_manager_id") @db.Uuid
-    dataEntry     DataEntry[]
-    profile       Profile[]
+    dataEntries   DataEntry[]
+    profiles      Profile[]
 
+    /// Maps to PostgreSQL table "organization_element"
     @@map("organization_element")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }
 
-model Profile {
-    id                      Int                  @id @default(autoincrement())
-    createdAt               DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
-    theme                   String?
-    avatar                  String?
-    roles                   Json?                @default("[]")
-    active                  Boolean              @default(true)
-    userId                  String               @unique @map("user_id") @db.Uuid
-    organizationElementCode String?              @map("organization_element_code")
-    organizationElement     OrganizationElement? @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
-    dataEntry              DataEntry[]
-    @@index([organizationElementCode], map: "idx_profile_organization_element_code")
-    @@map("profile")
-    @@schema("hdb")
-}
-
+/// Represents a user role with specific permissions in the system
+/// Roles control access to features and data
 model Role {
     id          Int       @id @default(autoincrement())
     createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-    code        String    @unique
-    designation String?
+    updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    code        String    @unique @db.VarChar(50)
+    designation String?   @db.VarChar(100)
+    profiles    Profile[]
 
+    /// Maps to PostgreSQL table "role"
     @@map("role")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }
 
+/// Represents a user profile with personalization and access control
+/// Links authentication (Supabase) with application roles and data
+model Profile {
+    id                      Int       @id @default(autoincrement())
+    createdAt               DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    username                String?   @unique @db.VarChar(50)
+    firstName               String?   @db.VarChar(50)
+    lastName                String?   @db.VarChar(50)
+    email                   String?   @unique @db.VarChar(100)
+    phone                   String?   @db.VarChar(50)
+    address                 String?   @db.VarChar(255)
+    theme                   String?   @db.VarChar(50)
+    avatar                  String?   @db.VarChar(255)
+    roles                   Role[]
+    active                  Boolean   @default(true)
+    userId                  String    @unique @map("user_id") @db.Uuid
+    organizationElementCode String?   @map("organization_element_code") @db.VarChar(50)
+
+    organizationElement OrganizationElement? @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+    dataEntries         DataEntry[]
+
+    // Constraints and indexes
+    /// Enforce unique combination of user and organization
+    @@unique([userId, organizationElementCode], name: "profile_user_org_unique")
+    /// Index for organization lookup performance
+    @@index([organizationElementCode], map: "idx_profile_organization_element_code")
+    /// Maps to PostgreSQL table "profile"
+    @@map("profile")
+    /// Belongs to the "hdb" schema
+    @@schema("hdb")
+}
+
+/// Represents a measurable health data variable
+/// Defines metadata about data points collected in the system
 model Variable {
-    id           Int          @id @default(autoincrement())
-    createdAt    DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
-    code         String       @unique
+    id           Int       @id @default(autoincrement())
+    createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    code         String    @unique
     designation  String?
-    type         Json?        @default("[]")
-    dataSourceId Int          @map("data_source_id")
-    categoryCode String       @map("category_code")
+    type         Json?     @default("[]")
+    dataSourceId Int       @map("data_source_id")
+    categoryCode String    @map("category_code")
     frequency    String?
     level        String?
-    dataEntry    DataEntry[]
+
+    dataEntries  DataEntry[]
     dataCategory DataCategory @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
     dataSource   DataSource   @relation(fields: [dataSourceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-    @@index([categoryCode], map: "idx_variable_category_code")
-    @@index([dataSourceId], map: "idx_variable_data_source_id")
+    /// Maps to PostgreSQL table "variable"
     @@map("variable")
+    /// Belongs to the "hdb" schema
     @@schema("hdb")
 }

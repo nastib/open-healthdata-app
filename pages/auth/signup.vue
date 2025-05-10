@@ -16,14 +16,26 @@
             </div>
             <div class="grid gap-2">
               <Label for="password">Password</Label>
-              <Input id="password" type="password" v-model="form.password" @blur="validateField('password')" />
+              <Input
+                id="password"
+                type="password"
+                v-model="form.password"
+                @blur="validateField('password')"
+                placeholder="••••••••••••••••••••"
+              />
               <p v-if="errors.password" class="text-sm text-red-500">
                 {{ errors.password }}
               </p>
             </div>
             <div class="grid gap-2">
               <Label for="confirmPassword">Confirm Password</Label>
-              <Input id="confirmPassword" type="password" v-model="form.confirmPassword" @blur="validateField('confirmPassword')" />
+              <Input
+                id="confirmPassword"
+                type="password"
+                v-model="form.confirmPassword"
+                @blur="validateField('confirmPassword')"
+                placeholder="••••••••••••••••••••"
+              />
               <p v-if="errors.confirmPassword" class="text-sm text-red-500">
                 {{ errors.confirmPassword }}
               </p>
@@ -47,7 +59,14 @@
 definePageMeta({
   layout: 'auth',
 });
-
+import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import { Label } from '~/components/ui/label';
+import { Checkbox } from '~/components/ui/checkbox';
+import { useAuthStore } from '@/stores/auth.store';
+import { Loader } from '~/components/ui/loader';
+import { reactive } from 'vue';
 import { signupSchema } from '~/schemas/auth';
 
 const authStore = useAuthStore();

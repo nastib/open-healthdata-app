@@ -16,7 +16,13 @@
             </div>
             <div class="grid gap-2">
               <Label for="password">Password</Label>
-              <Input id="password" type="password" v-model="form.password" @blur="validateField('password')" />
+              <Input
+                id="password"
+                type="password"
+                v-model="form.password"
+                @blur="validateField('password')"
+                placeholder="••••••••••••••••••••"
+              />
               <p v-if="errors.password" class="text-sm text-red-500">
                 {{ errors.password }}
               </p>
@@ -63,18 +69,36 @@
 definePageMeta({
   layout: 'auth',
 });
-
+import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader } from '@/components/ui/loader';
+import { useAuthStore } from '@/stores/auth.store';
+import { reactive } from 'vue';
+import type { EventLog } from '@/types/index'; // Adjust the path based on where EventLog is defined
+import { toast } from 'vue-sonner';
 import { loginSchema } from '~/schemas/auth';
+import { EventTypes } from '~/server/services/events-log/index.service';
+import { useEventsLogStore } from '@/stores/events-log.store';
 
 const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const eventsLogStore = useEventsLogStore();
 
 const form = reactive({
-  email: '',
-  password: '',
+  email: 'digitlab.tech@gmail.com',
+  password: 'Admin123',
   rememberMe: false,
 });
+
 const errors = reactive<Record<string, string>>({});
 
+/**
+ * Validate a specific field
+ * @param field - The field to validate
+ */
 const validateField = (field: keyof typeof form) => {
   const result = loginSchema.safeParse(form);
   if (!result.success) {
@@ -85,8 +109,13 @@ const validateField = (field: keyof typeof form) => {
   }
 };
 
+/**
+ * Handle form submission
+ * @returns
+ */
 const handleSubmit = async () => {
   const result = loginSchema.safeParse(form);
+
   if (!result.success) {
     Object.entries(result.error.formErrors.fieldErrors).forEach(([field, err]) => {
       if (err && err[0]) {
@@ -96,11 +125,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  try {
-    await authStore.login(form);
-    await navigateTo('/dashboard');
-  } catch (error) {
-    // Errors are already handled by the auth store
-  }
+  await authStore.login(form);
+  await navigateTo('/dashboard');
 };
 </script>

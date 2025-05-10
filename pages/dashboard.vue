@@ -19,7 +19,36 @@
 
 <script setup>
 import { useWindowSize } from '@vueuse/core';
-import Card from '~/components/ui/card/Card.vue';
+import { Button } from '~/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '~/components/ui/card';
+const roles = ['ADMIN', 'USER'];
 
+definePageMeta({
+  layout: 'default',
+  title: 'Dashboard',
+  auth: true,
+  roles: roles,
+});
+
+onMounted(async () => {
+  const authStore = useAuthStore();
+  const profileStore = useProfileStore();
+
+  console.log('Dashboard mounted - auth state:', {
+    isAuthenticated: authStore.isAuthenticated(),
+    user: authStore.user,
+    session: authStore.session,
+  });
+
+  console.log('Profile state:', {
+    profile: profileStore.profile,
+    loading: profileStore.loading,
+  });
+
+  if (authStore.user?.id && !profileStore.profile) {
+    console.log('Fetching profile...');
+    await profileStore.fetchProfile(authStore.user.id);
+  }
+});
 const { width } = useWindowSize();
 </script>

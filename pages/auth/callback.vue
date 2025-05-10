@@ -13,6 +13,9 @@
 </template>
 
 <script setup lang="ts">
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useAuthStore } from '@/stores/auth.store';
+import { Loader } from '@/components/ui/loader';
 import { toast } from 'vue-sonner';
 
 definePageMeta({

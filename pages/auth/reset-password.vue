@@ -2,22 +2,25 @@
   <div class="max-w-md mx-auto mt-10 p-6">
     <Card>
       <CardHeader>
-        <CardTitle class="text-2xl">Reset Password</CardTitle>
+        <CardTitle class="text-2xl">Set New Password</CardTitle>
       </CardHeader>
       <CardContent>
         <form @submit.prevent="handleSubmit">
           <div class="grid gap-4">
             <div class="grid gap-2">
               <Label for="password">New Password</Label>
-              <Input id="password" type="password" v-model="form.password" required />
+              <Input id="password" type="password" v-model="password" placeholder="••••••••••••••••••••••" required />
             </div>
             <div class="grid gap-2">
               <Label for="confirmPassword">Confirm Password</Label>
-              <Input id="confirmPassword" type="password" v-model="form.confirmPassword" required />
+              <Input id="confirmPassword" type="password" v-model="confirmPassword" placeholder="••••••••••••••••••••••" required />
+              <p v-if="error" class="text-sm text-red-500">
+                {{ error }}
+              </p>
             </div>
-            <Button type="submit" class="w-full" :disabled="loading">
-              <Loader :loading="loading" size="sm" aria-label="Resetting password" />
-              <span>Reset Password</span>
+            <Button type="submit" class="w-full" :disabled="loading || !password || password !== confirmPassword">
+              <Loader :loading="loading" size="sm" />
+              <span>Update Password</span>
             </Button>
           </div>
         </form>
@@ -28,38 +31,41 @@
 
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
-
-definePageMeta({
-  layout: 'auth',
-});
-
-const supabase = useSupabase();
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Loader } from '@/components/ui/loader';
 const route = useRoute();
-const router = useRouter();
+const password = ref('');
+const confirmPassword = ref('');
+const error = ref('');
 const loading = ref(false);
+const authStore = useAuthStore();
 
-const form = reactive({
-  password: '',
-  confirmPassword: '',
+onMounted(() => {
+  // Verify the token from URL
+  if (!route.query.token) {
+    error.value = 'Invalid reset link';
+  }
 });
 
 const handleSubmit = async () => {
-  if (form.password !== form.confirmPassword) {
-    toast.error('Passwords do not match');
+  if (password.value !== confirmPassword.value) {
+    error.value = 'Passwords do not match';
     return;
   }
 
-  loading.value = true;
   try {
-    const { error } = await supabase.auth.updateUser({
-      password: form.password,
-    });
-
-    if (error) throw error;
+    loading.value = true;
+    error.value = '';
+    await authStore.updatePassword(password.value);
+    await navigateTo('/auth/login');
     toast.success('Password updated successfully');
-    router.push('/dashboard');
-  } catch (error: any) {
-    toast.error(error?.message || 'Failed to reset password');
+  } catch (err) {
+    toast.error('Failed to update password. Please try again.');
+    error.value = 'Failed to update password. Please try again.';
+    console.error('Password reset error:', err);
   } finally {
     loading.value = false;
   }

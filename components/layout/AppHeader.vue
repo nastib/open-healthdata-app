@@ -27,8 +27,11 @@
 </template>
 
 <script setup lang="ts">
-const sidebarOpen = useState<boolean>('sidebarOpen', () => true);
 import UserDropdown from '@/components/layout/UserDropdown.vue';
+import { Button } from '@/components/ui/button';
+import { Command, CommandInput } from '@/components/ui/command';
+
+const sidebarOpen = useState<boolean>('sidebarOpen', () => true);
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value;
