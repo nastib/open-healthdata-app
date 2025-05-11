@@ -4,10 +4,10 @@
     <div class="flex justify-around">
       <AppSidebar />
       <main
-        class="flex-1 overflow-auto transition-[margin-left] duration-300 ease-in-out"
+        class="flex flex-col w-full overflow-auto transition-[margin-left] duration-300 ease-in-out"
         :class="{ 'md:ml-38': sidebarOpen, 'ml-0': !sidebarOpen }"
       >
-        <div class="container py-6 px-4 md:px-6">
+        <div class="container md:mx-auto py-6 px-4 md:px-6" :class="{ 'md:ml-26': sidebarOpen, 'ml-0': !sidebarOpen }">
           <slot />
         </div>
         <AppFooter />

@@ -1,6 +1,6 @@
 <template>
-  <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-    <div class="container flex h-14 items-center">
+  <header class="sticky top-0 pr-2 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="container mx-auto flex h-14 items-center">
       <Button variant="ghost" size="icon" class="mr-2" @click="toggleSidebar" aria-label="Toggle sidebar">
         <Icon name="lucide:menu" size="20" />
       </Button>
