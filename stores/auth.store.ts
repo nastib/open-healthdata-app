@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import type { User, Session } from '@supabase/supabase-js';
 import { toast } from 'vue-sonner';
 import type { EventLog } from '@/types';
-import { EventTypes } from '@/server/services/events-log/index.service';
+import { EventTypes } from '~/server/services/events-log/index.service';
 
 interface Credentials {
   email: string;

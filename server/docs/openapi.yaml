@@ -1,0 +1,248 @@
+openapi: 3.1.0
+info:
+  title: Data Categories API
+  version: 1.0.0
+  description: API for managing data categories with RBAC enforcement
+
+servers:
+  - url: /api
+    description: Local development server
+
+paths:
+  /data-categories:
+    get:
+      summary: List all data categories
+      description: Returns a list of data categories. Requires DATA_VIEWER role.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DataCategory'
+                  meta:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Create a data category
+      description: Creates a new data category. Requires DATA_EDITOR role.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDataCategory'
+      responses:
+        '201':
+          description: Data category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataCategory'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /data-categories/{id}:
+    put:
+      summary: Update a data category
+      description: Updates an existing data category. Requires DATA_EDITOR role.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDataCategory'
+      responses:
+        '200':
+          description: Data category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataCategory'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete a data category
+      description: Deletes a data category. Requires DATA_DELETE role.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Data category deleted
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      description: Data category ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  schemas:
+    DataCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        designation:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - code
+        - updatedAt
+
+    CreateDataCategory:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 50
+        designation:
+          type: string
+          minLength: 3
+          maxLength: 255
+          nullable: true
+      required:
+        - code
+
+    UpdateDataCategory:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 50
+        designation:
+          type: string
+          minLength: 3
+          maxLength: 255
+          nullable: true
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                example: 400
+              statusMessage:
+                type: string
+                example: Validation Error
+              data:
+                type: object
+                additionalProperties: true
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                example: 403
+              statusMessage:
+                type: string
+                example: Forbidden - Insufficient permissions
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                example: 404
+              statusMessage:
+                type: string
+                example: Not Found
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                example: 500
+              statusMessage:
+                type: string
+                example: Internal Server Error
+
+  security:
+    - BearerAuth: []

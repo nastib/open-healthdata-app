@@ -1,4 +1,4 @@
-import { EventsLogService } from '@/server/services/events-log/index.service';
+import { EventsLogServices } from '~/server/services/events-log/index.service';
 import { EventLog } from '~/types';
 
 export default defineEventHandler(async event => {
@@ -15,7 +15,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const { data, error } = await EventsLogService.getEventsLogById(userId);
+    const { data, error } = await EventsLogServices.getEventsLogById(userId);
     return { data, error };
   } catch (error) {
     throw createError({

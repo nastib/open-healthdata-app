@@ -1,4 +1,4 @@
-import { ProfileServices } from '@/server/services/profile/index.service'
+import { ProfileServices } from '~/server/services/profile/index.service'
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id

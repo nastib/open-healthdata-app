@@ -14,11 +14,21 @@ export const EventTypes = {
   AUDIT_LOG: 'AUDIT_LOG'
 } as const
 
+/**
+ * EventLog interface
+ */
+interface EventLogServices {
+  createEvent: (event: EventLog) => Promise<{ data: EventLog | null; error: Error | null }>
+  getEventsLogById: (id: string) => Promise<{ data: EventLog[] | null; error: Error | undefined }>
+}
 
-export const EventsLogService: {
-  createEvent: (event: EventLog) => Promise<{ data: EventLog | null; error: Error | null }>;
-  getEventsLogById: (id: string) => Promise<{ data: EventLog[] | null; error: Error | undefined }>;
-} = {
+/**
+ * EventLog service
+ * @type {EventLogServices}
+ * @description This service is responsible for logging events to the database.
+ * It is used for auditing purposes and should not be used in client code.
+ */
+export const EventsLogServices: EventLogServices = {
   /**
    * Logs an authentication event to the database.
    * SERVER-ONLY - Do not use in client code
@@ -75,8 +85,6 @@ export const EventsLogService: {
         statusMessage: 'Logs not found'
       })
     }
-
-
 
     return {
       data: eventsById || null,

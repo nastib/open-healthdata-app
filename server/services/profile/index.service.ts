@@ -1,7 +1,15 @@
 import prisma  from "@/server/utils/prisma"
 import type { ProfileWithRoles } from '@/types';
+interface ErrorWithStatus extends Error {
+  statusCode?: number
+  statusMessage?: string
+}
 
-export const ProfileServices = {
+interface ProfileServices {
+  getProfileById: (userId: string) => Promise<{ data: ProfileWithRoles | null; error: Error | null }>
+}
+
+export const ProfileServices: ProfileServices = {
 
   /**
    * Fetches a profile by userId
