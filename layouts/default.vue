@@ -13,7 +13,6 @@
         <AppFooter />
       </main>
     </div>
-    <!-- <Sonner /> -->
   </div>
 </template>
 
@@ -21,7 +20,6 @@
 import AppFooter from '@/components/layout/AppFooter.vue';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppSidebar from '@/components/layout/AppSidebar.vue';
-//import Sonner from '@/components/ui/sonner/Sonner.vue';
 
 const sidebarOpen = useState('sidebarOpen', () => true);
 </script>

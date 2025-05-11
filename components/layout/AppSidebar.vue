@@ -10,7 +10,7 @@
       </div>
       <nav class="flex-1 overflow-y-auto p-4">
         <ul class="space-y-1">
-          <li v-for="link in links" :key="link.path">
+          <li v-for="link in filteredMenuLinks" :key="link.path">
             <NuxtLink
               :to="link.path"
               class="flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -28,21 +28,27 @@
 </template>
 
 <script setup lang="ts">
+import type { Role } from '@prisma/client';
+
 interface NavLink {
   path: string;
   label: string;
   icon: string;
+  roles: string[];
 }
 
 const sidebarOpen = useState<boolean>('sidebarOpen', () => true);
 const route = useRoute();
+const { hasRole } = useRoles();
 
-const links: NavLink[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'lucide:layout-dashboard' },
-  { path: '/data-categories', label: 'Data Categories', icon: 'lucide:folder' },
-  { path: '/organization-elements', label: 'Organization Elements', icon: 'lucide:building' },
-  { path: '/variables', label: 'Variables', icon: 'lucide:variable' },
+const menuLinks: NavLink[] = [
+  { path: '/dashboard', label: 'Dashboard', icon: 'lucide:layout-dashboard', roles: ['ADMIN', 'USER'] },
+  { path: '/data-categories', label: 'Data Categories', icon: 'lucide:folder', roles: ['ADMIN'] },
+  { path: '/organization-elements', label: 'Organization Elements', icon: 'lucide:building', roles: ['USER'] },
+  { path: '/variables', label: 'Variables', icon: 'lucide:variable', roles: ['ADMIN', 'USER'] },
 ];
+
+const filteredMenuLinks = computed(() => menuLinks.filter(item => item.roles.some(role => hasRole(role))));
 
 const isActive = (path: string): boolean => {
   return route.path.startsWith(path);

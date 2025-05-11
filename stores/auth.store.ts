@@ -42,7 +42,6 @@ interface AuthStores {
   syncUserProfile(): Promise<any[] | undefined>;
   isAuthenticated(): boolean;
   checkRateLimit(): boolean;
-  initAuthListener(): void;
   updatePassword(newPassword: string): Promise<void>;
   resetPassword(email: string): Promise<void>;
 }
@@ -91,7 +90,7 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
    * Check if user is authenticated
    * @returns {boolean}
    */
-  function isAuthenticated() {
+  function isAuthenticated(): boolean {
     return !!user.value && !loading.value;
   }
 
@@ -112,23 +111,23 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
   /**
    * Initialize authentication listener
    */
-  function initAuthListener() {
-    supabase.auth.onAuthStateChange((event, session) => {
-      logAuthEvent(event, session?.user?.email);
+  // function initAuthListener() {
+  //   supabase.auth.onAuthStateChange((event, session) => {
+  //     //logAuthEvent(event, session?.user?.email);
 
-      if (event === 'SIGNED_IN') {
-        setSession(session);
-        setUser(session?.user ?? null);
-        lastActivity.value = Date.now();
-        startSessionTimer();
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setUser(null);
-      } else if (event === 'TOKEN_REFRESHED') {
-        lastActivity.value = Date.now();
-      }
-    });
-  }
+  //     if (event === 'SIGNED_IN') {
+  //       setSession(session);
+  //       setUser(session?.user ?? null);
+  //       lastActivity.value = Date.now();
+  //       startSessionTimer();
+  //     } else if (event === 'SIGNED_OUT') {
+  //       setSession(null);
+  //       setUser(null);
+  //     } else if (event === 'TOKEN_REFRESHED') {
+  //       lastActivity.value = Date.now();
+  //     }
+  //   });
+  // }
 
   /**
    * Start session timer
@@ -148,14 +147,14 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
    * @param event
    * @param email
    */
-  function logAuthEvent(event: string, email?: string | null) {
-    supabase.from('auth_audit_log').insert({
-      event_type: event,
-      user_email: email,
-      ip_address: '', // Will be set by server
-      timestamp: new Date().toISOString(),
-    });
-  }
+  // function logAuthEvent(event: string, email?: string | null) {
+  //   supabase.from('auth_audit_log').insert({
+  //     event_type: event,
+  //     user_email: email,
+  //     ip_address: '', // Will be set by server
+  //     timestamp: new Date().toISOString(),
+  //   });
+  // }
 
   /**
    * Login with email and password
@@ -445,7 +444,7 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     syncUserProfile,
     isAuthenticated,
     checkRateLimit,
-    initAuthListener,
+    //initAuthListener,
     resetPassword,
     updatePassword,
   };

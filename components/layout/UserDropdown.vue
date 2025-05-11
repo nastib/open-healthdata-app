@@ -25,17 +25,24 @@
     >
       <DropdownMenuLabel class="font-normal">
         <div class="flex flex-col space-y-1">
-          <p class="text-sm font-medium leading-none">User Name</p>
-          <p class="text-xs leading-none text-muted-foreground">user@example.com</p>
+          <p class="text-sm font-bold leading-none">
+            {{ user?.email }}
+          </p>
+          <p class="text-xs leading-none text-muted-foreground">{{ user?.user_metadata.full_name }}</p>
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem as-child>
-        <NuxtLink to="/profile" class="w-full">Profile</NuxtLink>
+      <DropdownMenuItem as-child v-for="link in filteredUserDropdownLinks" :key="link.path">
+        <NuxtLink :to="link.path" class="w-full">
+          <Icon :name="link.icon" class="mr-3 h-4 w-4" />
+          <span>{{ link.label }}</span>
+        </NuxtLink>
       </DropdownMenuItem>
-      <DropdownMenuItem>Settings</DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem @click="handleLogout()"> Log out </DropdownMenuItem>
+      <DropdownMenuItem @click="handleLogout()">
+        <Icon name="lucide:log-out" class="mr-3 h-4 w-4" />
+        <span>Log out</span>
+      </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>
@@ -66,6 +73,24 @@ const router = useRouter();
 const { auth } = useSupabase();
 const authStore = useAuthStore();
 type AuthError = { message: string };
+const user = computed(() => authStore.user);
+
+const route = useRoute();
+const { hasRole } = useRoles();
+
+interface UserDropdownLink {
+  path: string;
+  label: string;
+  icon: string;
+  roles: string[];
+}
+
+const userDropdownLinks: UserDropdownLink[] = [
+  { path: '/profile', label: 'Profile', icon: 'lucide:user', roles: ['ADMIN', 'USER'] },
+  { path: '/settings', label: 'Settings', icon: 'lucide:settings', roles: ['ADMIN'] },
+];
+
+const filteredUserDropdownLinks = computed(() => userDropdownLinks.filter(item => item.roles.some(role => hasRole(role))));
 
 /**
  * Toggles the dropdown menu state
@@ -97,16 +122,8 @@ const handleLogout = async () => {
   try {
     isLoading.value = true;
 
-    // Sign out from Supabase
-    //const { error } = await auth.signOut();
-
-    //if (error) throw error;
-
     // Clear local auth state
     await authStore.logout();
-
-    // Show success feedback
-    //console.log('Logged out successfully');
 
     // Redirect to login page
     await navigateTo('/auth/login');
