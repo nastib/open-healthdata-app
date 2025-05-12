@@ -30,19 +30,17 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
    * @param event
    * @returns
    */
-  const createEventsLog = async (event: EventLog) => {
+  const createEventsLog = async (eventLog: EventLog) => {
     loading.value = true
     error.value = null
-
     try {
       const { data, error: fetchError } = await $fetch<{data: EventsLog, error?: any}>(`/api/events-log`,{
         method: 'POST',
         body: {
-          eventType: event.eventType,
-          userId: event.userId,
-          ipAddress: event.ipHash || '',
-          userAgent: event.userAgent || '',
-          metadata: event.metadata || {},
+          eventType: eventLog.eventType,
+          userId: eventLog.userId,
+          metadata: eventLog.metadata || {},
+          location: eventLog.location || {},
           createdAt: new Date()
         }
       })
@@ -56,7 +54,6 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
         throw createError(fetchError?.statusMessage || 'Failed to create event log')
       }
 
-      //@ts-ignore
       eventsLog.value = data
       loading.value = false
 

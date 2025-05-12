@@ -1,15 +1,25 @@
 import { defineEventHandler, readBody } from 'h3';
 import { DataCategoryServices } from '@/server/services/data-categories/index.service';
-import { DataCategoryIdSchema, UpdateDataCategorySchema } from '@/server/schemas/data-categories';
+import { DataCategoryIdSchema, UpdateDataCategorySchema } from '~/server/schemas/data-categories.schema';
 import type { ErrorWithStatus } from '@/types/index'
 
 
 export default defineEventHandler(async event => {
+  const { updateDataCategory } = new DataCategoryServices()
+
   try {
-    const id = Number(event.context.params?.id);
-    const body = await readBody(event);
+    // Check user role
+    const user = await getAuthenticatedUser(event)
+    if (!user.hasRole('DATA_EDITOR')) {
+      return {
+        data: null,
+        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
+      }
+    }
 
     // Validate input
+    const id = Number(event.context.params?.id);
+    const body = await readBody(event);
     const validation = UpdateDataCategorySchema.safeParse(body);
     const validationId = DataCategoryIdSchema.safeParse(id);
 
@@ -24,7 +34,8 @@ export default defineEventHandler(async event => {
       });
     }
 
-    const { data, error } = await DataCategoryServices.updateDataCategory(event, id, body);
+    // Update data category
+    const { data, error } = await updateDataCategory(id, validation.data);
 
     if (!data && error) {
       throw createError({

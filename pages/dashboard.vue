@@ -36,30 +36,7 @@
       </div>
 
       <!-- Main Content Area -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <!-- Recent Activity -->
-        <Card class="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Last 5 events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div class="space-y-4">
-              <div v-for="event in recentEvents" :key="event.id" class="flex items-center">
-                <Avatar class="h-9 w-9">
-                  <AvatarImage :src="event.avatar" />
-                  <AvatarFallback>{{ event.initials }}</AvatarFallback>
-                </Avatar>
-                <div class="ml-4 space-y-1">
-                  <p class="text-sm font-medium leading-none">{{ event.user }}</p>
-                  <p class="text-sm text-muted-foreground">{{ event.action }}</p>
-                </div>
-                <div class="ml-auto font-medium">{{ event.time }}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div class="grid grid-cols-2 lg:grid-cols-2 gap-4">
         <!-- Data Visualization -->
         <Card>
           <CardHeader>
@@ -80,6 +57,29 @@
           </CardHeader>
           <CardContent>
             <Bar :data="chartData" :options="chartOptions" class="h-[300px]" />
+          </CardContent>
+        </Card>
+
+        <!-- Recent Activity -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Last 5 events</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div class="space-y-4">
+              <div v-for="event in recentEvents" :key="event.id" class="flex items-center">
+                <Avatar class="h-9 w-9">
+                  <AvatarImage :src="event.avatar" />
+                  <AvatarFallback>{{ event.initials }}</AvatarFallback>
+                </Avatar>
+                <div class="ml-4 space-y-1">
+                  <p class="text-sm font-medium leading-none">{{ event.user }}</p>
+                  <p class="text-sm text-muted-foreground">{{ event.action }}</p>
+                </div>
+                <div class="ml-auto font-medium">{{ event.time }}</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

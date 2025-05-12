@@ -13,7 +13,7 @@
           <li v-for="link in filteredMenuLinks" :key="link.path">
             <NuxtLink
               :to="link.path"
-              class="flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              class="flex items-center rounded-md px-3 py-2 text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
               active-class="bg-accent text-accent-foreground"
               :aria-current="isActive(link.path) ? 'page' : undefined"
             >
@@ -43,9 +43,12 @@ const { hasRole } = useRoles();
 
 const menuLinks: NavLink[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'lucide:layout-dashboard', roles: ['ADMIN', 'USER'] },
-  { path: '/data-categories', label: 'Data Categories', icon: 'lucide:folder', roles: ['ADMIN'] },
-  { path: '/organization-elements', label: 'Organization Elements', icon: 'lucide:building', roles: ['USER'] },
+  { path: '/data-categories', label: 'Categories', icon: 'lucide:folder', roles: ['ADMIN'] },
+  { path: '/organization-element', label: 'Organisations', icon: 'lucide:building', roles: ['ADMIN', 'USER'] },
+  { path: '/data-source', label: 'Source de données', icon: 'lucide:clipboard-type', roles: ['ADMIN', 'USER'] },
   { path: '/variables', label: 'Variables', icon: 'lucide:variable', roles: ['ADMIN', 'USER'] },
+  { path: '/indicator', label: 'Indicateurs', icon: 'lucide:area-chart', roles: ['ADMIN', 'USER'] },
+  { path: '/data-entry', label: 'Saisie des données', icon: 'lucide:database', roles: ['ADMIN', 'USER'] },
 ];
 
 const filteredMenuLinks = computed(() => menuLinks.filter(item => item.roles.some(role => hasRole(role))));

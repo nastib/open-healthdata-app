@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { createErrorSchema } from '@/server/utils/error.utils'
+import { type AvatarFallbackProps } from 'reka-ui';
 
 // Base data category schema
 const DataCategoryBaseSchema = z.object({
@@ -45,3 +46,9 @@ export const DataCategoryResponseSchemas = {
   }),
   list: z.array(DataCategoryBaseSchema)
 }
+
+// export type DataCategory = z.infer<typeof DataCategoryBaseSchema>
+// export type DataCategoryQuery = z.infer<typeof DataCategoryQuerySchema>
+// export type DataCategoryId = z.infer<typeof DataCategoryIdSchema>
+// export type CreateDataCategoryInput = z.infer<typeof CreateDataCategorySchema>
+// export type UpdateDataCategoryInput = z.infer<typeof UpdateDataCategorySchema>

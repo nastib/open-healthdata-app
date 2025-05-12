@@ -1,21 +1,34 @@
+import { CreateEventLogSchema, EventLogUserIdSchema } from '~/server/schemas/events-log.schema';
 import { EventsLogServices } from '~/server/services/events-log/index.service';
-import { EventLog } from '~/types';
+import { ErrorWithStatus, EventLog } from '~/types';
 
 export default defineEventHandler(async event => {
-  const { userId } = event.context.params || {};
-
-  if (!userId) {
-    return {
-      data: null,
-      error: createError({
-        statusCode: 400,
-        statusMessage: 'Missing user Id',
-      }),
-    };
-  }
+   const eventsLogServices = new EventsLogServices();
 
   try {
-    const { data, error } = await EventsLogServices.getEventsLogById(userId);
+
+    // Validate input
+    const { userId } = event.context.params || {};
+    const validationId = EventLogUserIdSchema.safeParse(userId)
+    if (!validationId.success) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Validation Error',
+        data: validationId.error.format()
+      }) as ErrorWithStatus
+    }
+
+    //
+    const { data, error } = await eventsLogServices.getEventsLogByUserId(validationId.data);
+
+    if (!data && error) {
+      throw createError({
+        statusCode: (error as ErrorWithStatus).statusCode || 400,
+        statusMessage: (error as ErrorWithStatus).statusMessage + ' - ' + error.message || 'Not found Error',
+        data: error
+      }) as ErrorWithStatus
+    }
+
     return { data, error };
   } catch (error) {
     throw createError({

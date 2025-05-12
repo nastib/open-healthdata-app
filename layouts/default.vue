@@ -7,7 +7,7 @@
         class="flex flex-col transition-[margin-left] duration-300 ease-in-out w-full"
         :class="{ 'md:ml-38': sidebarOpen, 'ml-0': !sidebarOpen }"
       >
-        <div class="container w-full py-2 px-4 md:px-6" :class="{ 'md:ml-24 md:pr-28': sidebarOpen, 'ml-0 md:mx-auto ': !sidebarOpen }">
+        <div class="container w-full py-2 px-4 md:px-6" :class="{ 'md:ml-24 md:pr-14': sidebarOpen, 'ml-0 md:mx-auto ': !sidebarOpen }">
           <slot />
         </div>
         <AppFooter />

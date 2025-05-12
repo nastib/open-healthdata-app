@@ -30,7 +30,12 @@ export const DataEntryQuerySchema = z.object({
   year: z.string().optional(),
   valid: z.string().optional(),
   limit: z.string().optional(),
-  offset: z.string().optional()
+  offset: z.string().optional(),
+  sort: z.enum(['asc', 'desc']).optional()
 })
 
-export type DataEntryQuery = z.infer<typeof DataEntryQuerySchema>
+// export type DataEntryQuery = z.infer<typeof DataEntryQuerySchema>
+// export type CreateDataEntryInput = z.infer<typeof CreateDataEntrySchema>
+// export type UpdateDataEntryInput = z.infer<typeof UpdateDataEntrySchema>
+// export type DataEntryId = z.infer<typeof DataEntryIdSchema>
+

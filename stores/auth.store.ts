@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import type { User, Session } from '@supabase/supabase-js';
 import { toast } from 'vue-sonner';
 import type { EventLog } from '@/types';
-import { EventTypes } from '~/server/services/events-log/index.service';
+import { EventTypes } from '@/utils/index';
 
 interface Credentials {
   email: string;
@@ -108,26 +108,6 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     return true;
   }
 
-  /**
-   * Initialize authentication listener
-   */
-  // function initAuthListener() {
-  //   supabase.auth.onAuthStateChange((event, session) => {
-  //     //logAuthEvent(event, session?.user?.email);
-
-  //     if (event === 'SIGNED_IN') {
-  //       setSession(session);
-  //       setUser(session?.user ?? null);
-  //       lastActivity.value = Date.now();
-  //       startSessionTimer();
-  //     } else if (event === 'SIGNED_OUT') {
-  //       setSession(null);
-  //       setUser(null);
-  //     } else if (event === 'TOKEN_REFRESHED') {
-  //       lastActivity.value = Date.now();
-  //     }
-  //   });
-  // }
 
   /**
    * Start session timer
@@ -141,20 +121,6 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       }
     }, 60000); // Check every minute
   }
-
-  /**
-   * Log authentication event
-   * @param event
-   * @param email
-   */
-  // function logAuthEvent(event: string, email?: string | null) {
-  //   supabase.from('auth_audit_log').insert({
-  //     event_type: event,
-  //     user_email: email,
-  //     ip_address: '', // Will be set by server
-  //     timestamp: new Date().toISOString(),
-  //   });
-  // }
 
   /**
    * Login with email and password
@@ -178,16 +144,14 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
         toast.error(error?.message || 'Login failed');
 
         // Log the login failed event
-        const event = {
+        const eventLog = {
           eventType: EventTypes.LOGIN_FAILED,
           userId: '',
-          ipHash: useRequestHeaders(['x-forwarded-for'])?.['x-forwarded-for'] || '',
-          userAgent: useRequestHeaders(['user-agent'])?.['user-agent'] || '',
           createdAt: new Date(),
           metadata: { email: credentials.email, error: error?.message },
         } as unknown as EventLog;
 
-        await eventsLogStore.createEventsLog(event);
+        await eventsLogStore.createEventsLog(eventLog);
 
         throw error;
       }
@@ -201,16 +165,15 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       await profileStore.fetchProfile(data.user.id);
 
       // Log the login success event
-      const event = {
+      const eventLog = {
         eventType: EventTypes.LOGIN_SUCCESS,
         userId: data.user.id,
-        ipHash: useRequestHeaders(['x-forwarded-for'])?.['x-forwarded-for'] || '',
-        userAgent: useRequestHeaders(['user-agent'])?.['user-agent'] || '',
         createdAt: new Date(),
-        metadata: { email: data.user.email },
+        metadata: { email: data.user?.email },
+        location: window.location.href,
       } as unknown as EventLog;
 
-      await eventsLogStore.createEventsLog(event);
+      await eventsLogStore.createEventsLog(eventLog);
 
       toast.success('Logged in successfully');
     } catch (error) {
@@ -325,12 +288,42 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
         },
       });
 
-      if (error) {
-        toast.error(error.message || 'Signup failed');
+      if (error || !data) {
+        // Fetch user profile after successful login
+
+        // Log the login success event
+        const event = {
+          eventType: EventTypes.SIGNUP_FAILED,
+          userId: '',
+          createdAt: new Date(),
+          metadata: { email: data.user?.email },
+          location: window.location.href,
+        } as unknown as EventLog;
+
+        const eventsLogStore = useEventsLogStore();
+        await eventsLogStore.createEventsLog(event);
+
+        toast.error(error?.message || 'Signup failed');
         throw error;
       }
 
       setUser(data.user);
+
+      if(data?.user?.id){
+        const eventLog = {
+          eventType: EventTypes.SIGNUP_SUCCESS,
+          userId: data.user.id,
+          createdAt: new Date(),
+          metadata: { email: data.user?.email },
+          location: window.location.href,
+        } as unknown as EventLog;
+
+        const eventsLogStore = useEventsLogStore();
+        await eventsLogStore.createEventsLog(eventLog);
+        }
+
+
+
       toast.success('Account created successfully. Please check your email for verification.');
     } catch (error) {
       console.error('Signup error:', error);
@@ -358,16 +351,15 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       const authStore = useAuthStore();
 
       // Log the login failed event
-      const event = {
+      const eventLog = {
         eventType: EventTypes.LOGOUT,
         userId: authStore.user?.id || '',
-        ipHash: useRequestHeaders(['x-forwarded-for'])?.['x-forwarded-for'] || '',
-        userAgent: useRequestHeaders(['user-agent'])?.['user-agent'] || '',
         createdAt: new Date(),
         metadata: { email: authStore.user?.email },
+        location: window.location.href,
       } as unknown as EventLog;
 
-      await eventsLogStore.createEventsLog(event);
+      await eventsLogStore.createEventsLog(eventLog);
 
       setUser(null);
       setSession(null);

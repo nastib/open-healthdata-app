@@ -77,15 +77,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader } from '@/components/ui/loader';
 import { useAuthStore } from '@/stores/auth.store';
 import { reactive } from 'vue';
-import type { EventLog } from '@/types/index'; // Adjust the path based on where EventLog is defined
-import { toast } from 'vue-sonner';
-import { loginSchema } from '~/schemas/auth';
-import { EventTypes } from '~/server/services/events-log/index.service';
+import { loginSchema } from '~/schemas/auth.schema';
 import { useEventsLogStore } from '@/stores/events-log.store';
 
 const authStore = useAuthStore();
-const profileStore = useProfileStore();
-const eventsLogStore = useEventsLogStore();
 
 const form = reactive({
   email: 'digitlab.tech@gmail.com',

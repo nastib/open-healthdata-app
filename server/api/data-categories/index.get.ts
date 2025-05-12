@@ -1,13 +1,24 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { DataCategoryServices } from '~/server/services/data-categories/index.service'
-import { DataCategoryQuerySchema } from '~/server/schemas/data-categories'
+import { DataCategoryQuerySchema } from '~/server/schemas/data-categories.schema'
 import type { ErrorWithStatus } from '@/types/index'
 
 export default defineEventHandler(async (event) => {
+  const { getDataCategories } = new DataCategoryServices()
+
   try {
-    const query = getQuery(event)
+    // Check user role
+    const user = await getAuthenticatedUser(event)
+    if (!user.hasRole('DATA_VIEWER')) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Forbidden - Insufficient permissions',
+        data: user.profile.roles.map(role => role.code).join(', ')
+      })
+    }
 
     // Validate query params
+    const query = getQuery(event)
     const validation = DataCategoryQuerySchema.safeParse(query)
     if (!validation.success) {
       throw createError({
@@ -17,7 +28,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const { data, error: error } = await DataCategoryServices.getDataCategories(event)
+    const { data, error: error } = await getDataCategories(validation.data)
 
     if (!data && error) {
       throw createError({

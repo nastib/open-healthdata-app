@@ -67,7 +67,7 @@ import { Checkbox } from '~/components/ui/checkbox';
 import { useAuthStore } from '@/stores/auth.store';
 import { Loader } from '~/components/ui/loader';
 import { reactive } from 'vue';
-import { signupSchema } from '~/schemas/auth';
+import { signupSchema } from '~/schemas/auth.schema';
 
 const authStore = useAuthStore();
 const form = reactive({

@@ -1,147 +1,183 @@
 import { H3Event } from 'h3'
 import { createError } from 'h3'
-import { CreateDataCategorySchema, UpdateDataCategorySchema, DataCategoryIdSchema } from '~/server/schemas/data-categories'
+import { CreateDataCategorySchema, UpdateDataCategorySchema, DataCategoryIdSchema, DataCategoryQuerySchema } from '~/server/schemas/data-categories.schema'
 import type { DataCategory } from '@prisma/client'
 import prisma from '~/server/utils/prisma'
+import { z } from 'zod'
+import { ErrorWithStatus } from '~/types'
 
-export const DataCategoryServices = {
+
+interface DataCategoryService {
+  getDataCategories : (query: z.infer< typeof DataCategoryQuerySchema>) => Promise<{ data: DataCategory[] | null, error: ErrorWithStatus | null }>;
+  getDataCategoryById : (id: z.infer< typeof DataCategoryIdSchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
+  createDataCategory : (input: z.infer<typeof CreateDataCategorySchema>) =>  Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
+  updateDataCategory : (id: z.infer<typeof DataCategoryIdSchema>, input: z.infer<typeof UpdateDataCategorySchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
+  deleteDataCategory: (id: z.infer<typeof DataCategoryIdSchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>
+}
+
+export class DataCategoryServices implements DataCategoryService {
   /**
-   * Get all data categories
+   * Get a data category by ID
+   * @param id
+   * @returns
    */
-  getDataCategories: async (event: H3Event): Promise<{ data: DataCategory[] | null; error: Error | null }> => {
-    const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_VIEWER')) {
+  async getDataCategoryById(id: z.infer<typeof DataCategoryIdSchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
+    try {
+      const data = await prisma.dataCategory.findUnique({
+        where: { id }
+      });
+
+      if (!data) {
+        return {
+          data: null,
+          error: {
+            name: 'DataCategoryNotFoundError',
+            statusCode: 404,
+            statusMessage: 'Data category not found',
+            message: `No data category found with ID ${id}`
+          }
+        };
+      }
+
+      return { data, error: null };
+    } catch (err) {
       return {
         data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
+        error: createError({ statusCode: 500, message: 'Failed to fetch data category by ID' })
+      };
     }
+  }
+
+
+
+  /**
+   * Get all data categories
+   * @param query
+   * @returns
+   */
+  async getDataCategories (query: z.infer<typeof DataCategoryQuerySchema>): Promise<{ data: DataCategory[] | null; error: ErrorWithStatus | null }> {
 
     try {
-      const categories = await prisma.dataCategory.findMany()
-      return { data: categories, error: null }
+      const data = await prisma.dataCategory.findMany()
+
+      if (!data) {
+        return {
+          data: null,
+          error: {
+            name: 'DataCategoryNotFoundError',
+            statusCode: 404,
+            statusMessage: 'Data entry not found',
+            message: `No data entry found`
+          }
+        };
+      }
+
+      return { data, error: null }
     } catch (err) {
       return {
         data: null,
         error: createError({ statusCode: 500, message: 'Failed to fetch data categories' })
       }
     }
-  },
+  }
 
   /**
    * Create a new data category
+   * @param event
+   * @param input
+   * @returns
    */
-  createDataCategory: async (event: H3Event, input: unknown): Promise<{ data: DataCategory | null; error: Error | null }> => {
-    const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_EDITOR')) {
-      return {
-        data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
-    }
-
-    const validation = CreateDataCategorySchema.safeParse(input)
-    if (!validation.success) {
-      return {
-        data: null,
-        error: createError({
-          statusCode: 400,
-          message: 'Validation Error',
-          data: validation.error.format()
-        })
-      }
-    }
+  async createDataCategory (input: z.infer<typeof CreateDataCategorySchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
 
     try {
-      const newCategory = await prisma.dataCategory.create({
-        data: validation.data
+      const data = await prisma.dataCategory.create({
+        data: input
       })
-      return { data: newCategory, error: null }
+
+      if (!data) {
+        return {
+          data: null,
+          error: {
+            name: 'DataCategoryFailedToCreate',
+            statusCode: 404,
+            statusMessage: 'Data entry not found',
+            message: `No data entry found`
+          }
+        };
+      }
+
+      return { data, error: null }
     } catch (err) {
       return {
         data: null,
         error: createError({ statusCode: 500, message: 'Failed to create data category' })
       }
     }
-  },
+  }
 
   /**
    * Update a data category
+   * @param id
+   * @param input
+   * @returns
    */
-  updateDataCategory: async (event: H3Event, id: number, input: unknown): Promise<{ data: DataCategory | null; error: Error | null }> => {
-    const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_EDITOR')) {
-      return {
-        data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
-    }
-
-    const idValidation = DataCategoryIdSchema.safeParse(id)
-    if (!idValidation.success) {
-      return {
-        data: null,
-        error: createError({
-          statusCode: 400,
-          message: 'Invalid ID format'
-        })
-      }
-    }
-
-    const dataValidation = UpdateDataCategorySchema.safeParse(input)
-    if (!dataValidation.success) {
-      return {
-        data: null,
-        error: createError({
-          statusCode: 400,
-          message: 'Validation Error',
-          data: dataValidation.error.format()
-        })
-      }
-    }
+  async updateDataCategory (id: z.infer<typeof DataCategoryIdSchema>, input: z.infer<typeof UpdateDataCategorySchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
 
     try {
-      const updatedCategory = await prisma.dataCategory.update({
+      const data = await prisma.dataCategory.update({
         where: { id },
-        data: dataValidation.data
+        data: input
       })
-      return { data: updatedCategory, error: null }
+
+      if (!data) {
+        return {
+          data: null,
+          error: {
+            name: 'DataCategoryFailedToUpdate',
+            statusCode: 404,
+            statusMessage: 'Data category failed to update',
+            message: `Data category failed to update`
+          }
+        };
+      }
+
+      return { data, error: null }
+
     } catch (err) {
       return {
         data: null,
         error: createError({ statusCode: 500, message: 'Failed to update data category' })
       }
     }
-  },
+  }
+
 
   /**
    * Delete a data category
+   * @param event
+   * @param id
+   * @returns
    */
-  deleteDataCategory: async (event: H3Event, id: number): Promise<{ data: DataCategory | null; error: Error | null }> => {
-    const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_DELETE')) {
-      return {
-        data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
-    }
-
-    const validation = DataCategoryIdSchema.safeParse(id)
-    if (!validation.success) {
-      return {
-        data: null,
-        error: createError({
-          statusCode: 400,
-          message: 'Invalid ID format'
-        })
-      }
-    }
+  async deleteDataCategory (id: z.infer<typeof DataCategoryIdSchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }>  {
 
     try {
-      const deletedCategory = await prisma.dataCategory.delete({
+      const data = await prisma.dataCategory.delete({
         where: { id }
       })
-      return { data: deletedCategory, error: null }
+
+      if (!data) {
+        return {
+          data: null,
+          error: {
+            name: 'DataCategoryFailedToDelete',
+            statusCode: 404,
+            statusMessage: 'Data category failed to delete',
+            message: `Data category failed to delete`
+          }
+        };
+      }
+
+      return { data, error: null }
     } catch (err) {
       return {
         data: null,
