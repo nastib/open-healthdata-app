@@ -2,9 +2,11 @@ import { defineEventHandler, getQuery } from 'h3'
 import { DataEntryServices } from '~/server/services/data-entries/index.service'
 import { DataEntryQuerySchema } from '~/server/schemas/data-entries.schema'
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
   const { getDataEntries } = new DataEntryServices()
+  const { getAuthenticatedUser } = new AuthServer()
 
   try {
     // Check user role

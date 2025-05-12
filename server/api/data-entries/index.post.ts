@@ -2,18 +2,24 @@ import { defineEventHandler, readBody } from 'h3'
 import { DataEntryServices } from '~/server/services/data-entries/index.service'
 import { CreateDataEntrySchema } from '~/server/schemas/data-entries.schema'
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
   const { createDataEntry } = new DataEntryServices()
+  const authServer = new AuthServer()
+  const { getAuthenticatedUser, getPermissions } = authServer
 
   try {
-    // Check user role
+    // Check user permissions
     const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_CREATOR')) {
+    if (!getPermissions().canCreateDataEntry(user)) {
       throw createError({
         statusCode: 403,
-        statusMessage: 'Forbidden - Insufficient permissions',
-        data: user.profile.roles.map((role) => role.code).join(', ')
+        statusMessage: 'Forbidden - Insufficient permissions to create data entries',
+        data: {
+          requiredRoles: ['DATA_ADMIN', 'DATA_CREATOR'],
+          userRoles: user.profile.roles.map((role) => role.code)
+        }
       }) as ErrorWithStatus
     }
 

@@ -2,19 +2,21 @@ import { defineEventHandler, readBody } from 'h3'
 import { DataCategoryServices } from '~/server/services/data-categories/index.service'
 import { CreateDataCategorySchema, DataCategoryErrorSchemas } from '~/server/schemas/data-categories.schema'
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
   const { createDataCategory } = new DataCategoryServices()
+  const authServer = new AuthServer()
+  const { getAuthenticatedUser, getPermissions } = authServer
 
-  if (event.method === 'POST') {}
   try {
-    // Check user role
+    // Check user permissions
     const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_CREATOR')) {
-      return {
-        data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
+    if (!getPermissions().canCreateDataCategory(user)) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Forbidden - Insufficient permissions to create data categories'
+      })
     }
 
     // Validate input

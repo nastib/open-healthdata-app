@@ -2,9 +2,11 @@ import { defineEventHandler, getQuery } from 'h3'
 import { DataCategoryServices } from '~/server/services/data-categories/index.service'
 import { DataCategoryQuerySchema } from '~/server/schemas/data-categories.schema'
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
   const { getDataCategories } = new DataCategoryServices()
+  const { getAuthenticatedUser } = new AuthServer()
 
   try {
     // Check user role

@@ -2,18 +2,26 @@ import { defineEventHandler } from 'h3'
 import { DataEntryIdSchema } from '~/server/schemas/data-entries.schema'
 import { DataEntryServices } from '~/server/services/data-entries/index.service'
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
   const { deleteDataEntry } = new DataEntryServices()
+  const authServer = new AuthServer()
+  const { getAuthenticatedUser, getPermissions } = authServer
 
    try {
-    // Check user role
+    // Check user permissions
     const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_DELETE')) {
+    const entryId = Number(event.context.params?.id)
+    if (!await getPermissions().canDeleteDataEntry(user, entryId)) {
       throw createError({
         statusCode: 403,
-        statusMessage: 'Forbidden - Insufficient permissions',
-        data: user.profile.roles.map((role) => role.code).join(', ')
+        statusMessage: 'Forbidden - Insufficient permissions to delete this data entry',
+        data: {
+          requiredRoles: ['DATA_ADMIN'],
+          userRoles: user.profile.roles.map((role) => role.code),
+          organizationElementCode: user.profile.organizationElementCode
+        }
       }) as ErrorWithStatus
     }
 

@@ -1,20 +1,23 @@
-import { defineEventHandler } from 'h3'
+import { defineEventHandler, H3Event } from 'h3';
 import { DataCategoryIdSchema } from '~/server/schemas/data-categories.schema'
 import { DataCategoryServices } from '~/server/services/data-categories/index.service'
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event: H3Event) => {
   const { deleteDataCategory } = new DataCategoryServices()
+  const authServer = new AuthServer()
+  const { getAuthenticatedUser, getPermissions } = authServer
 
   try {
-
-    // Check user role
+    // Check user permissions
     const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_DELETE')) {
-      return {
-        data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
+    const categoryId = Number(event.context.params?.id)
+    if (!await getPermissions().canDeleteDataCategory(user, categoryId)) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Forbidden - Insufficient permissions to delete this data category'
+      })
     }
 
     // Validate input

@@ -2,19 +2,23 @@ import { defineEventHandler, readBody } from 'h3';
 import { DataCategoryServices } from '@/server/services/data-categories/index.service';
 import { DataCategoryIdSchema, UpdateDataCategorySchema } from '~/server/schemas/data-categories.schema';
 import type { ErrorWithStatus } from '@/types/index'
+import { AuthServer } from '~/server/utils/auth.server';
 
 
 export default defineEventHandler(async event => {
   const { updateDataCategory } = new DataCategoryServices()
+  const authServer = new AuthServer()
+  const { getAuthenticatedUser, getPermissions } = authServer
 
   try {
-    // Check user role
+    // Check user permissions
     const user = await getAuthenticatedUser(event)
-    if (!user.hasRole('DATA_EDITOR')) {
-      return {
-        data: null,
-        error: createError({ statusCode: 403, message: 'Forbidden - Insufficient permissions' })
-      }
+    const categoryId = Number(event.context.params?.id)
+    if (!await getPermissions().canUpdateDataCategory(user, categoryId)) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Forbidden - Insufficient permissions to update this data category'
+      })
     }
 
     // Validate input

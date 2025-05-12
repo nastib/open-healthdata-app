@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-
 export const CreateEventLogSchema = z.object({
   eventType: z.string(),
   userId: z.string().optional(),
