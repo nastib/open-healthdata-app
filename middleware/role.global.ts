@@ -1,3 +1,4 @@
+
 export default defineNuxtRouteMiddleware(async (to) => {
   const authStore = useAuthStore();
   const profileStore = useProfileStore();
