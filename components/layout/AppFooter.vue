@@ -5,20 +5,12 @@
       <nav aria-label="Footer navigation">
         <ul class="flex items-center space-x-4">
           <li>
-            <NuxtLink
-              to="/privacy"
-              class="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Privacy Policy"
-            >
+            <NuxtLink to="/" class="text-sm text-muted-foreground hover:text-foreground transition-colors" aria-label="Privacy Policy">
               Privacy Policy
             </NuxtLink>
           </li>
           <li>
-            <NuxtLink
-              to="/terms"
-              class="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Terms of Service"
-            >
+            <NuxtLink to="/" class="text-sm text-muted-foreground hover:text-foreground transition-colors" aria-label="Terms of Service">
               Terms of Service
             </NuxtLink>
           </li>
@@ -30,4 +22,5 @@
 
 <script setup lang="ts">
 const currentYear = new Date().getFullYear();
+const links = ref<string[]>(['/privacy', '/terms']);
 </script>

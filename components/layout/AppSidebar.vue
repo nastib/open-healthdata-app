@@ -9,51 +9,55 @@
         <h2 class="text-lg font-semibold">Navigation</h2>
       </div>
       <nav class="flex-1 overflow-y-auto p-4">
-        <ul class="space-y-1">
-          <li v-for="link in filteredMenuLinks" :key="link.path">
-            <NuxtLink
-              :to="link.path"
-              class="flex items-center rounded-md px-3 py-2 text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-              active-class="bg-accent text-accent-foreground"
-              :aria-current="isActive(link.path) ? 'page' : undefined"
-            >
-              <Icon :name="link.icon" class="mr-3 h-4 w-4" />
-              <span>{{ link.label }}</span>
-            </NuxtLink>
-          </li>
-        </ul>
+        <ClientOnly>
+          <ul class="space-y-1">
+            <li v-for="link in filteredMenuLinks" :key="link.path">
+              <template v-if="routeExists(link.path)">
+                <NuxtLink
+                  :to="link.path"
+                  class="flex items-center rounded-md px-3 py-2 text-md font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  active-class="bg-accent text-accent-foreground"
+                  :aria-current="isActive(link.path) ? 'page' : undefined"
+                >
+                  <Icon :name="link.icon" class="mr-3 h-4 w-4" />
+                  <span>{{ link.label }}</span>
+                </NuxtLink>
+              </template>
+              <template v-else>
+                <span class="flex items-center rounded-md px-3 py-2 text-md font-medium text-muted-foreground cursor-not-allowed">
+                  <Icon :name="link.icon" class="mr-3 h-4 w-4" />
+                  <span>{{ link.label }}</span>
+                </span>
+              </template>
+            </li>
+          </ul>
+        </ClientOnly>
       </nav>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import type { Role } from '@prisma/client';
+const { resolve } = useRouter();
+const { menuLinks } = storeToRefs(useCoreStore());
+const { hasRole } = useRoles();
 
-interface NavLink {
-  path: string;
-  label: string;
-  icon: string;
-  roles: string[];
-}
+const filteredMenuLinks = computed(() => {
+  return menuLinks.value.filter(link => link.roles.some(role => hasRole(role)));
+});
 
 const sidebarOpen = useState<boolean>('sidebarOpen', () => true);
 const route = useRoute();
-const { hasRole } = useRoles();
-
-const menuLinks: NavLink[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'lucide:layout-dashboard', roles: ['ADMIN', 'USER'] },
-  { path: '/data-categories', label: 'Categories', icon: 'lucide:folder', roles: ['ADMIN'] },
-  { path: '/organization-element', label: 'Organisations', icon: 'lucide:building', roles: ['ADMIN', 'USER'] },
-  { path: '/data-source', label: 'Source de données', icon: 'lucide:clipboard-type', roles: ['ADMIN', 'USER'] },
-  { path: '/variables', label: 'Variables', icon: 'lucide:variable', roles: ['ADMIN', 'USER'] },
-  { path: '/indicator', label: 'Indicateurs', icon: 'lucide:area-chart', roles: ['ADMIN', 'USER'] },
-  { path: '/data-entry', label: 'Saisie des données', icon: 'lucide:database', roles: ['ADMIN', 'USER'] },
-];
-
-const filteredMenuLinks = computed(() => menuLinks.filter(item => item.roles.some(role => hasRole(role))));
 
 const isActive = (path: string): boolean => {
   return route.path.startsWith(path);
+};
+
+const routeExists = (path: string): boolean => {
+  try {
+    return !!resolve(path).name;
+  } catch {
+    return false;
+  }
 };
 </script>

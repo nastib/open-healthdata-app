@@ -19,7 +19,7 @@
 
 <script setup>
 import { useWindowSize } from '@vueuse/core';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '~/components/ui/card/Card.vue';
-import { Button } from '~/components/ui/button/Button.vue';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card/Card.vue';
+import { Button } from '@/components/ui/button/Button.vue';
 const { width } = useWindowSize();
 </script>

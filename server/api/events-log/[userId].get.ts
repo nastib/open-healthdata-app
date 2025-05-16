@@ -1,6 +1,7 @@
 import { CreateEventLogSchema, EventLogUserIdSchema } from '~/server/schemas/events-log.schema';
 import { EventsLogServices } from '~/server/services/events-log/index.service';
 import { ErrorWithStatus, EventLog } from '~/types';
+import { decrypt} from '@/server/utils/crypto-server'
 
 export default defineEventHandler(async event => {
    const eventsLogServices = new EventsLogServices();
@@ -29,7 +30,14 @@ export default defineEventHandler(async event => {
       }) as ErrorWithStatus
     }
 
-    return { data, error };
+   const hashData = data?.map(async eventLog => {
+      if (eventLog?.ipHash) {
+        const ipHash = await decrypt(eventLog?.ipHash) as string
+        return { ...eventLog, ipHash}
+      }
+    })
+
+    return { data: hashData, error };
   } catch (error) {
     throw createError({
       statusCode: 500,

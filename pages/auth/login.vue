@@ -78,14 +78,13 @@ import { Loader } from '@/components/ui/loader';
 import { useAuthStore } from '@/stores/auth.store';
 import { reactive } from 'vue';
 import { loginSchema } from '~/schemas/auth.schema';
-import { useEventsLogStore } from '@/stores/events-log.store';
 
 const authStore = useAuthStore();
 
 const form = reactive({
   email: 'digitlab.tech@gmail.com',
   password: 'Admin123',
-  rememberMe: false,
+  rememberMe: undefined,
 });
 
 const errors = reactive<Record<string, string>>({});

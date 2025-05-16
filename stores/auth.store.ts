@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
+import { ref } from 'vue';
 import type { User, Session } from '@supabase/supabase-js';
+import useSupabaseClient from '@/composables/useSupabase';
+import { useSessionPersistence } from '@/composables/useSessionPersistence';
 import { toast } from 'vue-sonner';
 import type { EventLog } from '@/types';
 import { EventTypes } from '@/utils/index';
@@ -10,95 +13,46 @@ interface Credentials {
   rememberMe?: boolean;
 }
 
-/**
- * AuthStores interface
- * @description Store for authentication
- * @returns {AuthStores}
- * @example
- * const authStore = useAuthStore()
- * authStore.login({ email: '', password: '' })
- * authStore.signup({ email: '', password: '' })
- * authStore.logout()
- * authStore.loginWithGoogle()
- * authStore.refreshSession()
- * authStore.syncUserProfile()
- * authStore.isAuthenticated()
- * authStore.checkRateLimit()
- * authStore.initAuthListener()
- */
-interface AuthStores {
-  user: Ref<User | null>;
-  session: Ref<Session | null>;
-  loading: Ref<boolean>;
-  lastAttempt: Ref<number>;
-  setUser(user: User | null): void;
-  setSession(session: Session | null): void;
-  setLoading(loading: boolean): void;
-  login(credentials: Credentials): Promise<void>;
-  signup(credentials: Credentials): Promise<void>;
-  logout(): Promise<void>;
-  loginWithGoogle(rememberMe?: boolean): Promise<void>;
-  refreshSession(): Promise<void>;
-  syncUserProfile(): Promise<any[] | undefined>;
-  isAuthenticated(): boolean;
-  checkRateLimit(): boolean;
-  updatePassword(newPassword: string): Promise<void>;
-  resetPassword(email: string): Promise<void>;
-}
-
-export const useAuthStore = defineStore('auth', (): AuthStores => {
+export const useAuthStore = defineStore('auth', () => {
+  // State
   const user = ref<User | null>(null);
   const session = ref<Session | null>(null);
-  const loading = ref<boolean>(false);
-  const lastAttempt = ref<number>(0);
-  const lastActivity = ref<number>(Date.now());
+  const loading = ref(false);
+  const lastAttempt = ref(0);
+  const lastActivity = ref(Date.now());
+  const initialized = ref(false);
+  const initializationPromise = ref<Promise<void> | null>(null);
 
-  const RATE_LIMIT_DELAY = 5000; // 5 seconds
-  const REMEMBER_ME_DURATION = 60 * 60 * 24 * 30; // 30 days
-  const DEFAULT_SESSION_DURATION = 60 * 60 * 24; // 1 day
-  const SESSION_TIMEOUT = 60 * 60 * 2; // 2 hours
-  const PASSWORD_RESET_TOKEN_EXPIRY = 60 * 15; // 15 minutes
+  // Constants
+  const RATE_LIMIT_DELAY = 5000;
+  const REMEMBER_ME_DURATION = 60 * 60 * 24 * 30;
+  const DEFAULT_SESSION_DURATION = 60 * 60 * 24;
+  const SESSION_TIMEOUT = 60 * 60 * 2;
+  const PASSWORD_RESET_TOKEN_EXPIRY = 60 * 15;
 
+  // Dependencies
   const supabase = useSupabaseClient();
+  const { saveSession, loadSession, clearSession } = useSessionPersistence();
 
-  /**
-   * Set user
-   * @param userCurrent
-   */
-  function setUser(userCurrent: User | null) {
+  // Core functions
+  const setUser = (userCurrent: User | null) => {
     user.value = userCurrent;
     loading.value = false;
-  }
+  };
 
-  /**
-   * Set session
-   * @param newSession
-   */
-  function setSession(newSession: Session | null) {
+  const setSession = (newSession: Session | null) => {
     session.value = newSession;
-  }
+  };
 
-  /**
-   * Set loading
-   * @param load
-   */
-  function setLoading(load: boolean) {
+  const setLoading = (load: boolean) => {
     loading.value = load;
-  }
+  };
 
-  /**
-   * Check if user is authenticated
-   * @returns {boolean}
-   */
-  function isAuthenticated(): boolean {
-    return !!user.value && !loading.value;
-  }
+  const isAuthenticated = (): boolean => {
+    return !!user.value?.id && !loading.value;
+  };
 
-  /**
-   * Check rate limit
-   * @returns {boolean}
-   */
-  function checkRateLimit(): boolean {
+  const checkRateLimit = (): boolean => {
     const now = Date.now();
     if (now - lastAttempt.value < RATE_LIMIT_DELAY) {
       toast.error('Please wait before trying again');
@@ -106,44 +60,53 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     }
     lastAttempt.value = now;
     return true;
-  }
+  };
 
-
-  /**
-   * Start session timer
-   */
-  function startSessionTimer() {
-    const timer = setInterval(() => {
-      if (Date.now() - lastActivity.value > SESSION_TIMEOUT * 1000) {
-        clearInterval(timer);
-        toast.warning('Your session has expired due to inactivity');
-        logout();
-      }
-    }, 60000); // Check every minute
-  }
-
-  /**
-   * Login with email and password
-   * @param credentials
-   */
-  async function login(credentials: Credentials) {
+  // Authentication methods
+  const login = async (credentials: Credentials) => {
     if (!checkRateLimit()) return;
 
     setLoading(true);
     try {
-      // SignIn with password
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
+      if (!error && data?.session) {
+         data.session.expires_in = credentials.rememberMe ? REMEMBER_ME_DURATION : DEFAULT_SESSION_DURATION;
 
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          initialized.value = true;
+
+          saveSession({
+            user: data.session.user,
+            tokens: {
+              access: data.session.access_token,
+              refresh: data.session.refresh_token,
+            },
+            preferences: {},
+            lastActivity: Date.now(),
+            expiresAt: Date.now() + data.session.expires_in * 1000,
+          });
+
+          if (data.session.user?.id) {
+            const profileStore = useProfileStore();
+            await profileStore.fetchProfile(data.session.user.id);
+          }
+        }
+      }
       const eventsLogStore = useEventsLogStore();
 
-      // Check for error
       if (error || !data) {
         toast.error(error?.message || 'Login failed');
 
-        // Log the login failed event
         const eventLog = {
           eventType: EventTypes.LOGIN_FAILED,
           userId: '',
@@ -152,20 +115,10 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
         } as unknown as EventLog;
 
         await eventsLogStore.createEventsLog(eventLog);
-
         throw error;
       }
 
-      // Set session and user
-      setSession(data.session);
-      setUser(data.user);
-
-      // Fetch user profile after successful login
-      const profileStore = useProfileStore();
-      await profileStore.fetchProfile(data.user.id);
-
-      // Log the login success event
-      const eventLog = {
+      const successLog = {
         eventType: EventTypes.LOGIN_SUCCESS,
         userId: data.user.id,
         createdAt: new Date(),
@@ -173,8 +126,7 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
         location: window.location.href,
       } as unknown as EventLog;
 
-      await eventsLogStore.createEventsLog(eventLog);
-
+      await eventsLogStore.createEventsLog(successLog);
       toast.success('Logged in successfully');
     } catch (error) {
       console.error('Login error:', error);
@@ -182,18 +134,13 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  /**
-   * Login with Google
-   * @param rememberMe
-   */
-  async function loginWithGoogle(rememberMe = false) {
+  const loginWithGoogle = async (rememberMe = false) => {
     if (!checkRateLimit()) return;
 
     setLoading(true);
     try {
-      //const supabase = useSupabaseClient();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -216,14 +163,10 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  /**
-   * Refresh session
-   */
-  async function refreshSession() {
+  const refreshSession = async () => {
     try {
-      //const supabase = useSupabaseClient();
       const { data, error } = await supabase.auth.refreshSession();
 
       if (error) {
@@ -239,16 +182,12 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       console.error('Session refresh error:', error);
       throw error;
     }
-  }
+  };
 
-  /**
-   * Sync user profile with Supabase
-   */
-  async function syncUserProfile() {
+  const syncUserProfile = async () => {
     if (!user.value) return;
 
     try {
-      //const supabase = useSupabaseClient();
       const { data, error } = await supabase
         .from('profiles')
         .upsert({
@@ -268,18 +207,13 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       console.error('Profile sync error:', error);
       throw error;
     }
-  }
+  };
 
-  /**
-   * Signup with email and password
-   * @param credentials
-   */
-  async function signup(credentials: Credentials) {
+  const signup = async (credentials: Credentials) => {
     if (!checkRateLimit()) return;
 
     setLoading(true);
     try {
-      //const supabase = useSupabaseClient();
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
@@ -289,14 +223,11 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       });
 
       if (error || !data) {
-        // Fetch user profile after successful login
-
-        // Log the login success event
         const event = {
           eventType: EventTypes.SIGNUP_FAILED,
           userId: '',
           createdAt: new Date(),
-          metadata: { email: data.user?.email },
+          metadata: { email: data?.user?.email },
           location: window.location.href,
         } as unknown as EventLog;
 
@@ -309,7 +240,7 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
 
       setUser(data.user);
 
-      if(data?.user?.id){
+      if (data?.user?.id) {
         const eventLog = {
           eventType: EventTypes.SIGNUP_SUCCESS,
           userId: data.user.id,
@@ -320,9 +251,7 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
 
         const eventsLogStore = useEventsLogStore();
         await eventsLogStore.createEventsLog(eventLog);
-        }
-
-
+      }
 
       toast.success('Account created successfully. Please check your email for verification.');
     } catch (error) {
@@ -331,16 +260,13 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  /**
-   * Logout
-   */
-  async function logout() {
+  const logout = async () => {
     setLoading(true);
     try {
-      //const supabase = useSupabaseClient();
       const { error } = await supabase.auth.signOut();
+      clearSession();
 
       if (error) {
         toast.error(error.message || 'Logout failed');
@@ -348,14 +274,12 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
       }
 
       const eventsLogStore = useEventsLogStore();
-      const authStore = useAuthStore();
 
-      // Log the login failed event
       const eventLog = {
         eventType: EventTypes.LOGOUT,
-        userId: authStore.user?.id || '',
+        userId: user.value?.id || '',
         createdAt: new Date(),
-        metadata: { email: authStore.user?.email },
+        metadata: { email: user.value?.email },
         location: window.location.href,
       } as unknown as EventLog;
 
@@ -371,13 +295,9 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  /**
-   * Reset password
-   * @param email
-   */
-  async function resetPassword(email: string) {
+  const resetPassword = async (email: string) => {
     if (!checkRateLimit()) return;
 
     setLoading(true);
@@ -395,12 +315,9 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     } finally {
       setLoading(false);
     }
-  }
-  /**
-   * Update password
-   * @param newPassword
-   */
-  async function updatePassword(newPassword: string) {
+  };
+
+  const updatePassword = async (newPassword: string) => {
     if (!checkRateLimit()) return;
 
     setLoading(true);
@@ -418,13 +335,94 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const initAuth = async () => {
+    if (initialized.value) return;
+
+    if (await initializationPromise.value) {
+      return await initializationPromise.value;
+    }
+
+    initializationPromise.value = (async () => {
+      try {
+        setLoading(true);
+
+        // First try to restore from persisted session
+        const persisted = loadSession();
+        console.log(persisted);
+
+        if (persisted?.tokens?.access) {
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: persisted.tokens.access,
+              refresh_token: persisted.tokens.refresh,
+            });
+
+            if (!error && data?.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+              initialized.value = true;
+              return;
+            }
+          } catch (e) {
+            console.warn('Failed to restore session from storage', e);
+          }
+        }
+
+        // Fallback to current session
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Session initialization error:', error);
+          throw error;
+        }
+
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+
+          saveSession({
+            user: data.session.user,
+            tokens: {
+              access: data.session.access_token,
+              refresh: data.session.refresh_token,
+            },
+            preferences: {},
+            lastActivity: Date.now(),
+            expiresAt: Date.now() + data.session.expires_in * 1000,
+          });
+
+          if (data.session.user?.id) {
+            const profileStore = useProfileStore();
+            await profileStore.fetchProfile(data.session.user.id);
+          }
+          localStorage.removeItem('supabase.auth.token');
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        throw error;
+      } finally {
+        initialized.value = true;
+        setLoading(false);
+      }
+    })();
+
+    try {
+      return await initializationPromise.value;
+    } finally {
+      initializationPromise.value = null;
+    }
+  };
 
   return {
     user,
     session,
     loading,
     lastAttempt,
+    lastActivity,
+    initialized,
+    SESSION_TIMEOUT,
     setUser,
     setSession,
     setLoading,
@@ -436,13 +434,12 @@ export const useAuthStore = defineStore('auth', (): AuthStores => {
     syncUserProfile,
     isAuthenticated,
     checkRateLimit,
-    //initAuthListener,
-    resetPassword,
     updatePassword,
+    resetPassword,
   };
 });
 
-// make sure to pass the right store definition, `useAuth` in this case.
+// make sure to pass the right store definition, `useAuthStore` in this case.
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useAuthStore, import.meta.hot));
 }

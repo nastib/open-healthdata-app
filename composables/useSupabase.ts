@@ -17,13 +17,15 @@ export default function useSupabaseClient() {
   // Only use state on client-side to avoid SSR serialization issues
   if (import.meta.client) {
     const supabase = useState<SupabaseClient>(SUPABASE_STATE_KEY, () => {
+
       const client = createClient(supabaseUrl, supabaseKey, {
         auth: {
           storageKey: 'supabase.auth.token',
-          persistSession: true,
-          autoRefreshToken: true
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
         }
-       })
+      })
 
       // Add reset capability for testing
       Object.defineProperty(client, 'reset', {
@@ -36,7 +38,6 @@ export default function useSupabaseClient() {
 
       return client
     })
-
     return supabase.value
   }
 

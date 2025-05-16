@@ -1,9 +1,10 @@
 import { CreateEventLogSchema } from '~/server/schemas/events-log.schema';
 import { EventsLogServices } from '~/server/services/events-log/index.service';
 import { ErrorWithStatus, EventLog } from '~/types';
-
+import { encrypt, decrypt} from '@/server/utils/crypto-server'
 export default defineEventHandler(async event => {
   const eventsLogServices = new EventsLogServices();
+
 
   try {
 
@@ -19,9 +20,8 @@ export default defineEventHandler(async event => {
       }) as ErrorWithStatus
 
     }
-
     const { data, error } = await eventsLogServices.createEvent({
-      ipHash: getRequestIP(event, { xForwardedFor: true }) || '',
+      ipHash: await encrypt(getRequestIP(event, { xForwardedFor: true })) || '',
       userAgent: getRequestHeader(event, 'user-agent') || '',
       ...validation.data
     });
