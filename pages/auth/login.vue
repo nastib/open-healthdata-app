@@ -79,12 +79,13 @@ import { useAuthStore } from '@/stores/auth.store';
 import { reactive } from 'vue';
 import { loginSchema } from '~/schemas/auth.schema';
 
-const authStore = useAuthStore();
+const { isLocalStorageAvailable, loadSession } = useSessionPersistence();
 
+const authStore = useAuthStore();
 const form = reactive({
-  email: 'digitlab.tech@gmail.com',
-  password: 'Admin123',
-  rememberMe: undefined,
+  email: isLocalStorageAvailable ? loadSession()?.user.email : 'digitlab.tech@gmail.com',
+  password: isLocalStorageAvailable && loadSession()?.user.password ? loadSession()?.user.password : 'Admin123',
+  rememberMe: isLocalStorageAvailable ? loadSession()?.preferences?.rememberMe : false,
 });
 
 const errors = reactive<Record<string, string>>({});

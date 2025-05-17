@@ -91,7 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
               access: data.session.access_token,
               refresh: data.session.refresh_token,
             },
-            preferences: {},
+            preferences: {rememberMe: credentials.rememberMe},
             lastActivity: Date.now(),
             expiresAt: Date.now() + data.session.expires_in * 1000,
           });

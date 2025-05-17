@@ -24,7 +24,7 @@ export function useSessionPersistence() {
   const isLocalStorageAvailable = typeof localStorage !== 'undefined'
   const sessionData = ref<SessionData | null>(null)
 
-  const encrypt = (data: any): string  => {
+  const encrypt = (data: any)  => {
     return CryptoJS.AES.encrypt(JSON.stringify(data), SECRET_KEY).toString()
   }
 

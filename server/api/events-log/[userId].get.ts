@@ -30,12 +30,19 @@ export default defineEventHandler(async event => {
       }) as ErrorWithStatus
     }
 
-   const hashData = data?.map(async eventLog => {
-      if (eventLog?.ipHash) {
-        const ipHash = await decrypt(eventLog?.ipHash) as string
-        return { ...eventLog, ipHash}
-      }
-    })
+   const hashData = await Promise.all(
+     data?.map(async eventLog => {
+       if (!eventLog?.ipHash) return eventLog;
+
+       try {
+         const ipHash = await decrypt(eventLog.ipHash);
+         return { ...eventLog, ipHash };
+       } catch (error) {
+         console.error('Failed to decrypt ipHash:', error);
+         return { ...eventLog, ipHash: null };
+       }
+     }) ?? []
+   );
 
     return { data: hashData, error };
   } catch (error) {

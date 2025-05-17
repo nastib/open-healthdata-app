@@ -1,37 +1,37 @@
 import { CreateEventLogSchema } from '~/server/schemas/events-log.schema';
 import { EventsLogServices } from '~/server/services/events-log/index.service';
 import { ErrorWithStatus, EventLog } from '~/types';
-import { encrypt, decrypt} from '@/server/utils/crypto-server'
+import { encrypt } from '@/server/utils/crypto-server';
+import { getRequestIP, getRequestHeader } from 'h3';
+
+
 export default defineEventHandler(async event => {
   const eventsLogServices = new EventsLogServices();
 
-
   try {
-
     // Validate input
-    const body = await readBody(event)
+    const body = await readBody(event);
 
-    const validation = CreateEventLogSchema.safeParse(body)
+    const validation = CreateEventLogSchema.safeParse(body);
     if (!validation.success) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Validation Error',
-        data: validation.error?.format()
-      }) as ErrorWithStatus
-
+        data: validation.error?.format(),
+      }) as ErrorWithStatus;
     }
     const { data, error } = await eventsLogServices.createEvent({
-      ipHash: await encrypt(getRequestIP(event, { xForwardedFor: true })) || '',
+      ipHash: (await encrypt(getRequestIP(event, { xForwardedFor: true }))) || '',
       userAgent: getRequestHeader(event, 'user-agent') || '',
-      ...validation.data
+      ...validation.data,
     });
 
     if (!data && error) {
       throw createError({
         statusCode: (error as ErrorWithStatus).statusCode || 400,
         statusMessage: (error as ErrorWithStatus).statusMessage + ' - ' + error.message || 'Not found Error',
-        data: error
-      }) as ErrorWithStatus
+        data: error,
+      }) as ErrorWithStatus;
     }
 
     return { data, error };
