@@ -83,9 +83,9 @@ const { isLocalStorageAvailable, loadSession } = useSessionPersistence();
 
 const authStore = useAuthStore();
 const form = reactive({
-  email: isLocalStorageAvailable ? loadSession()?.user.email : 'digitlab.tech@gmail.com',
+  email: isLocalStorageAvailable && loadSession()?.user.email ? loadSession()?.user.email : 'digitlab.tech@gmail.com',
   password: isLocalStorageAvailable && loadSession()?.user.password ? loadSession()?.user.password : 'Admin123',
-  rememberMe: isLocalStorageAvailable ? loadSession()?.preferences?.rememberMe : false,
+  rememberMe: isLocalStorageAvailable && loadSession()?.preferences?.rememberMe ? loadSession()?.preferences?.rememberMe : false,
 });
 
 const errors = reactive<Record<string, string>>({});
@@ -108,6 +108,8 @@ const validateField = (field: keyof typeof form) => {
  * Handle form submission
  * @returns
  */
+const toast = useToast();
+
 const handleSubmit = async () => {
   const result = loginSchema.safeParse(form);
 
@@ -120,7 +122,13 @@ const handleSubmit = async () => {
     return;
   }
 
-  await authStore.login(form);
-  await navigateTo('/dashboard');
+  try {
+    await authStore.login(form);
+
+    await navigateTo('/dashboard', { replace: true });
+  } catch (error) {
+    console.error('Login navigation error:', error);
+    toast.show.error('Login completed but session initialization failed');
+  }
 };
 </script>

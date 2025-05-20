@@ -1,20 +1,22 @@
 import { defineEventHandler } from 'h3'
-import { DataEntryServices } from '~/server/services/data-entries/index.service'
-import { DataEntryIdSchema } from '~/server/schemas/data-entries.schema'
+import { EntryServices } from '~/server/services/entries/index.service'
+import { EntryIdSchema } from '~/server/schemas/entries.schema'
 import type { ErrorWithStatus } from '~/types/index'
 import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
-  const { getDataEntryById } = new DataEntryServices()
+  const { fetchEntryById } = new EntryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const entriesPermissions = new EntriesPermissions()
+
 
   try {
     const entryIdString = event.context.params?.id
     const entryId = Number(entryIdString)
 
     // Validate input ID
-    const validationId = DataEntryIdSchema.safeParse(entryId)
+    const validationId = EntryIdSchema.safeParse(entryId)
     if (!validationId.success) {
       throw createError({
         statusCode: 400,
@@ -24,8 +26,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
-    if (!await getPermissions().canViewDataEntry(user, validationId.data)) {
+    const user = await getAuthenticatedUserFromJWT(event)
+    if (!await entriesPermissions.canView(user.profile, validationId.data)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to view this data entry'
@@ -33,7 +35,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Fetch data entry
-    const { data, error } = await getDataEntryById(validationId.data)
+    const { data, error } = await fetchEntryById(validationId.data)
 
     if (error || !data) {
       const serviceError = error as ErrorWithStatus

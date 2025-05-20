@@ -66,16 +66,12 @@ import { onClickOutside } from '@vueuse/core';
  * @example
  * <UserDropdown />
  */
+type AuthError = { message: string };
 const isLoading = ref(false);
 const isOpen = ref<boolean>(false);
 const triggerRef = ref<HTMLElement | null>(null);
-const router = useRouter();
-const { auth } = useSupabase();
 const authStore = useAuthStore();
-type AuthError = { message: string };
 const user = computed(() => authStore.user);
-
-const route = useRoute();
 const { hasRole } = useRoles();
 
 interface UserDropdownLink {

@@ -1,30 +1,29 @@
-import type { H3Event } from 'h3'
-import prisma from '~/server/utils/prisma'
+import prisma from '@/server/utils/prisma'
 import type { DataEntry } from '@prisma/client'
 import type { ErrorWithStatus } from '@/types/index'
 import { z } from 'zod'
 import {
-  CreateDataEntrySchema,
-  UpdateDataEntrySchema,
-  DataEntryIdSchema,
-  DataEntryQuerySchema
-} from '~/server/schemas/data-entries.schema'
+  CreateEntrySchema,
+  UpdateEntrySchema,
+  EntryIdSchema,
+  EntryQuerySchema
+} from '@/server/schemas/entries.schema'
 
-interface DataEntryService {
-   getDataEntries : (query: z.infer< typeof DataEntryQuerySchema>) => Promise<{ data: DataEntry[] | null, error: ErrorWithStatus | null }>;
-   getDataEntryById : (id: z.infer< typeof DataEntryIdSchema>) => Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>;
-   createDataEntry : (input: z.infer<typeof CreateDataEntrySchema>) =>  Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>;
-   updateDataEntry : (id: z.infer<typeof DataEntryIdSchema>, input: z.infer<typeof UpdateDataEntrySchema>) => Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>;
-   deleteDataEntry: (id: z.infer<typeof DataEntryIdSchema>) => Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>
+interface EntryService {
+   fetchEntries : (query: z.infer< typeof EntryQuerySchema>) => Promise<{ data: DataEntry[] | null, error: ErrorWithStatus | null }>;
+   fetchEntryById : (id: z.infer< typeof EntryIdSchema>) => Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>;
+   createEntry : (input: z.infer<typeof CreateEntrySchema>) =>  Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>;
+   updateEntry : (id: z.infer<typeof EntryIdSchema>, input: z.infer<typeof UpdateEntrySchema>) => Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>;
+   deleteEntry: (id: z.infer<typeof EntryIdSchema>) => Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }>
 }
-export class DataEntryServices implements DataEntryService {
+export class EntryServices implements EntryService {
   /**
    * Get data entry by ID
    * @param id
    * @returns
    */
-  async getDataEntryById(
-    id: z.infer<typeof DataEntryIdSchema>
+  async fetchEntryById(
+    id: z.infer<typeof EntryIdSchema>
   ): Promise<{ data: DataEntry | null; error: ErrorWithStatus | null }> {
     try {
       const data = await prisma.dataEntry.findUnique({
@@ -68,10 +67,15 @@ export class DataEntryServices implements DataEntryService {
    * @param query
    * @returns
    */
-  async getDataEntries(query: z.infer<typeof DataEntryQuerySchema>): Promise<{ data: DataEntry[] | null, error: ErrorWithStatus | null }> {
+  async fetchEntries(query: z.infer<typeof EntryQuerySchema>): Promise<{ data: DataEntry[] | null, error: ErrorWithStatus | null }> {
 
     try {
       const data = await prisma.dataEntry.findMany({
+        take: query.limit,
+        skip: query.offset,
+        orderBy: {
+          id: query.sort === 'asc' ? 'asc' : 'desc'
+        },
         include: {
           DataCategory: true,
           organizationElement: true,
@@ -112,8 +116,8 @@ export class DataEntryServices implements DataEntryService {
    * @param input
    * @returns
    */
-  async createDataEntry(
-    input: z.infer<typeof CreateDataEntrySchema>
+  async createEntry(
+    input: z.infer<typeof CreateEntrySchema>
   ): Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }> {
     try {
       const data = await prisma.dataEntry.create({
@@ -167,9 +171,9 @@ export class DataEntryServices implements DataEntryService {
    * @param input
    * @returns
    */
-  async updateDataEntry(
-    id: z.infer<typeof DataEntryIdSchema>,
-    input: z.infer<typeof UpdateDataEntrySchema>
+  async updateEntry(
+    id: z.infer<typeof EntryIdSchema>,
+    input: z.infer<typeof UpdateEntrySchema>
   ): Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }> {
     try {
       const data = await prisma.dataEntry.update({
@@ -223,8 +227,8 @@ export class DataEntryServices implements DataEntryService {
    * @param id
    * @returns
    */
-  async deleteDataEntry(
-    id: z.infer<typeof DataEntryIdSchema>,
+  async deleteEntry(
+    id: z.infer<typeof EntryIdSchema>,
   ): Promise<{ data: DataEntry | null, error: ErrorWithStatus | null }> {
 
     try {

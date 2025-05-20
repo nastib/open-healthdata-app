@@ -1,18 +1,20 @@
 import { defineEventHandler, readBody } from 'h3'
-import { DataEntryServices } from '~/server/services/data-entries/index.service'
-import { CreateDataEntrySchema } from '~/server/schemas/data-entries.schema'
+import { EntryServices } from '@/server/services/entries/index.service'
+import { CreateEntrySchema } from '@/server/schemas/entries.schema'
 import type { ErrorWithStatus } from '@/types/index'
-import { AuthServer } from '~/server/utils/auth.server'
+import { AuthServer } from '@/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
-  const { createDataEntry } = new DataEntryServices()
+  const { createEntry } = new EntryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const entriesPermissions = new EntriesPermissions()
+
 
   try {
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
-    if (!getPermissions().canCreateDataEntry(user)) {
+    const user = await getAuthenticatedUserFromJWT(event)
+    if (!await entriesPermissions.canCreate(user.profile)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to create data entries',
@@ -25,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
     const body = await readBody(event)
     // Validate input
-    const validation = CreateDataEntrySchema.safeParse(body)
+    const validation = CreateEntrySchema.safeParse(body)
     if (!validation.success) {
       throw createError({
         statusCode: 400,
@@ -35,7 +37,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Create data entry
-    const { data, error } = await createDataEntry(validation.data)
+    const { data, error } = await createEntry(validation.data)
 
     if (!data && error) {
       throw createError({

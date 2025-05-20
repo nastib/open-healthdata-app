@@ -1,19 +1,20 @@
 import { defineEventHandler } from 'h3'
-import { DataEntryIdSchema } from '~/server/schemas/data-entries.schema'
-import { DataEntryServices } from '~/server/services/data-entries/index.service'
+import { EntryIdSchema } from '@/server/schemas/entries.schema'
+import { EntryServices } from '@/server/services/entries/index.service'
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
-  const { deleteDataEntry } = new DataEntryServices()
+  const { deleteEntry } = new EntryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const entriesPermissions = new EntriesPermissions()
 
    try {
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
+    const user = await getAuthenticatedUserFromJWT(event)
     const entryId = Number(event.context.params?.id)
-    if (!await getPermissions().canDeleteDataEntry(user, entryId)) {
+    if (!await entriesPermissions.canDelete(user.profile, entryId)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to delete this data entry',
@@ -27,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
     // Validate input
     const id = Number(event.context.params?.id)
-    const validationId = DataEntryIdSchema.safeParse(id)
+    const validationId = EntryIdSchema.safeParse(id)
     if (!validationId.success) {
       throw createError({
         statusCode: 400,
@@ -36,7 +37,7 @@ export default defineEventHandler(async (event) => {
       }) as ErrorWithStatus
     }
     // Delete data entry
-    const { data, error } = await deleteDataEntry(validationId.data)
+    const { data, error } = await deleteEntry(validationId.data)
 
     if (!data && error) {
       throw createError({

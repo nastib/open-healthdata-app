@@ -36,7 +36,6 @@
           </CardContent>
         </Card>
       </div>
-
       <!-- Main Content Area -->
       <div class="grid grid-cols-2 lg:grid-cols-2 gap-4">
         <!-- Data Visualization -->

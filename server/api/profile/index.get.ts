@@ -1,25 +1,24 @@
 import { ProfileServices } from '@/server/services/profile/index.service'
-import { ProfileUserIdSchema } from '@/server/schemas/profile.schema'
 import { ErrorWithStatus } from '@/types'
+import { ProfilePermissions } from '@/server/utils'
 
 export default defineEventHandler(async (event) => {
-  const { fetchProfileByUserId } = new ProfileServices()
+  const { fetchAllProfiles } = new ProfileServices()
+  const { getAuthenticatedUserFromJWT } = new AuthServer()
+  const profilePermissions  = new ProfilePermissions()
 
   try {
 
-    // Validate input
-    const userId = event.context.params?.userId
-    const validationUserId = ProfileUserIdSchema.safeParse(userId)
-
-    if (!validationUserId.success) {
+    // Check user permissions
+    const user = await getAuthenticatedUserFromJWT(event)
+    if (!await profilePermissions.canViewAll(user.profile)) {
       throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation Error',
-        data: validationUserId.error.format()
-      }) as ErrorWithStatus
+        statusCode: 403,
+        statusMessage: 'Forbidden - Insufficient permissions to view this data entry'
+      })
     }
 
-    const { data, error } = await fetchProfileByUserId(validationUserId.data )
+    const { data, error } = await fetchAllProfiles()
 
     if (!data && error) {
       throw createError({

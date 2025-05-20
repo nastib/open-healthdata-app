@@ -1,20 +1,23 @@
 import { defineEventHandler, readBody } from 'h3';
-import { DataCategoryServices } from '@/server/services/data-categories/index.service';
-import { DataCategoryIdSchema, UpdateDataCategorySchema } from '~/server/schemas/data-categories.schema';
+import { CategoryServices } from '~/server/services/categories/index.service';
+import { CategoryIdSchema, UpdateCategorySchema } from '~/server/schemas/categories.schema';
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '~/server/utils/auth.server';
 
 
 export default defineEventHandler(async event => {
-  const { updateDataCategory } = new DataCategoryServices()
+  const { updateCategory } = new CategoryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const categoriesPermissions = new CategoriesPermissions()
+
 
   try {
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
+    const user = await getAuthenticatedUserFromJWT(event)
     const categoryId = Number(event.context.params?.id)
-    if (!await getPermissions().canUpdateDataCategory(user, categoryId)) {
+
+    if (!await categoriesPermissions.canUpdate(user.profile, categoryId)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to update this data category'
@@ -24,8 +27,8 @@ export default defineEventHandler(async event => {
     // Validate input
     const id = Number(event.context.params?.id);
     const body = await readBody(event);
-    const validation = UpdateDataCategorySchema.safeParse(body);
-    const validationId = DataCategoryIdSchema.safeParse(id);
+    const validation = UpdateCategorySchema.safeParse(body);
+    const validationId = CategoryIdSchema.safeParse(id);
 
     if (!validation.success || !validationId.success) {
       throw createError({
@@ -39,7 +42,7 @@ export default defineEventHandler(async event => {
     }
 
     // Update data category
-    const { data, error } = await updateDataCategory(id, validation.data);
+    const { data, error } = await updateCategory(id, validation.data);
 
     if (!data && error) {
       throw createError({

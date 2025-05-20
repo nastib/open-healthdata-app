@@ -1,19 +1,21 @@
 import { defineEventHandler, H3Event } from 'h3';
-import { DataCategoryIdSchema } from '~/server/schemas/data-categories.schema'
-import { DataCategoryServices } from '~/server/services/data-categories/index.service'
+import { CategoryIdSchema } from '~/server/schemas/categories.schema'
+import { CategoryServices } from '~/server/services/categories/index.service'
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { deleteDataCategory } = new DataCategoryServices()
+  const { deleteCategory } = new CategoryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const categoriesPermissions = new CategoriesPermissions()
+
 
   try {
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
+    const user = await getAuthenticatedUserFromJWT(event)
     const categoryId = Number(event.context.params?.id)
-    if (!await getPermissions().canDeleteDataCategory(user, categoryId)) {
+    if (!await categoriesPermissions.canDelete(user.profile, categoryId)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to delete this data category'
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Validate input
     const id = Number(event.context.params?.id)
-    const validationId = DataCategoryIdSchema.safeParse(id);
+    const validationId = CategoryIdSchema.safeParse(id);
 
     if (!validationId.success) {
       throw createError({
@@ -33,7 +35,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Delete data category
-    const { data, error } = await deleteDataCategory(validationId.data)
+    const { data, error } = await deleteCategory(validationId.data)
 
     if (!data && error) {
       throw createError({

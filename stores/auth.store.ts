@@ -3,9 +3,31 @@ import { ref } from 'vue';
 import type { User, Session } from '@supabase/supabase-js';
 import useSupabaseClient from '@/composables/useSupabase';
 import { useSessionPersistence } from '@/composables/useSessionPersistence';
-import { toast } from 'vue-sonner';
 import type { EventLog } from '@/types';
 import { EventTypes } from '@/utils/index';
+
+interface AuthStore {
+  user: Ref<User | null>;
+  session: Ref<Session | null>;
+  loading: Ref<boolean>;
+  lastAttempt: Ref<number>;
+  lastActivity: Ref<number>;
+  initialized: Ref<boolean>;
+  SESSION_TIMEOUT: number;
+  setUser: (user: User | null) => void;
+  setSession: (session: Session | null) => void;
+  setLoading: (loading: boolean) => void;
+  login: (credentials: Credentials) => Promise<void>;
+  signup: (credentials: Credentials) => Promise<void>;
+  logout: () => Promise<void>;
+  loginWithGoogle: (rememberMe?: boolean) => Promise<void>;
+  refreshSession: () => Promise<void>;
+  syncUserProfile: () => Promise<any[] | undefined>;
+  isAuthenticated: () => boolean;
+  checkRateLimit: () => boolean;
+  updatePassword: (newPassword: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+}
 
 interface Credentials {
   email: string;
@@ -13,7 +35,7 @@ interface Credentials {
   rememberMe?: boolean;
 }
 
-export const useAuthStore = defineStore('auth', () => {
+export const useAuthStore = defineStore('auth', (): AuthStore => {
   // State
   const user = ref<User | null>(null);
   const session = ref<Session | null>(null);
@@ -33,6 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Dependencies
   const supabase = useSupabaseClient();
   const { saveSession, loadSession, clearSession } = useSessionPersistence();
+  const toast   = useToast();
 
   // Core functions
   const setUser = (userCurrent: User | null) => {
@@ -55,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
   const checkRateLimit = (): boolean => {
     const now = Date.now();
     if (now - lastAttempt.value < RATE_LIMIT_DELAY) {
-      toast.error('Please wait before trying again');
+      toast.show.error('Please wait before trying again');
       return false;
     }
     lastAttempt.value = now;
@@ -72,13 +95,15 @@ export const useAuthStore = defineStore('auth', () => {
         email: credentials.email,
         password: credentials.password,
       });
+
       if (!error && data?.session) {
-         data.session.expires_in = credentials.rememberMe ? REMEMBER_ME_DURATION : DEFAULT_SESSION_DURATION;
+        data.session.expires_in = credentials.rememberMe ? REMEMBER_ME_DURATION : DEFAULT_SESSION_DURATION;
 
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
-        })
+        });
+        localStorage.removeItem('sb-supabase-auth-token');
 
         if (data.session) {
           setSession(data.session);
@@ -91,7 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
               access: data.session.access_token,
               refresh: data.session.refresh_token,
             },
-            preferences: {rememberMe: credentials.rememberMe},
+            preferences: { rememberMe: credentials.rememberMe },
             lastActivity: Date.now(),
             expiresAt: Date.now() + data.session.expires_in * 1000,
           });
@@ -105,7 +130,7 @@ export const useAuthStore = defineStore('auth', () => {
       const eventsLogStore = useEventsLogStore();
 
       if (error || !data) {
-        toast.error(error?.message || 'Login failed');
+        toast.show.error(error?.message || 'Login failed');
 
         const eventLog = {
           eventType: EventTypes.LOGIN_FAILED,
@@ -127,7 +152,7 @@ export const useAuthStore = defineStore('auth', () => {
       } as unknown as EventLog;
 
       await eventsLogStore.createEventsLog(successLog);
-      toast.success('Logged in successfully');
+      toast.show.success('Logged in successfully');
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -153,11 +178,11 @@ export const useAuthStore = defineStore('auth', () => {
       });
 
       if (error) {
-        toast.error(error.message || 'Google login failed');
+        toast.show.error(error.message || 'Google login failed');
         throw error;
       }
     } catch (error) {
-      toast.error('Google login error: ' + (error as Error).message);
+      toast.show.error('Google login error: ' + (error as Error).message);
       console.error('Google login error:', error);
       throw error;
     } finally {
@@ -170,7 +195,7 @@ export const useAuthStore = defineStore('auth', () => {
       const { data, error } = await supabase.auth.refreshSession();
 
       if (error) {
-        toast.error(error.message || 'Session refresh failed');
+        toast.show.error(error.message || 'Session refresh failed');
         console.error('Session refresh failed:', error);
         throw error;
       }
@@ -178,7 +203,7 @@ export const useAuthStore = defineStore('auth', () => {
       setSession(data.session);
       setUser(data.user);
     } catch (error) {
-      toast.error('Session refresh error: ' + (error as Error).message);
+      toast.show.error('Session refresh error: ' + (error as Error).message);
       console.error('Session refresh error:', error);
       throw error;
     }
@@ -234,7 +259,7 @@ export const useAuthStore = defineStore('auth', () => {
         const eventsLogStore = useEventsLogStore();
         await eventsLogStore.createEventsLog(event);
 
-        toast.error(error?.message || 'Signup failed');
+        toast.show.error(error?.message || 'Signup failed');
         throw error;
       }
 
@@ -253,7 +278,7 @@ export const useAuthStore = defineStore('auth', () => {
         await eventsLogStore.createEventsLog(eventLog);
       }
 
-      toast.success('Account created successfully. Please check your email for verification.');
+      toast.show.success('Account created successfully. Please check your email for verification.');
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -268,10 +293,9 @@ export const useAuthStore = defineStore('auth', () => {
       const { error } = await supabase.auth.signOut();
       clearSession();
 
-      if (error) {
-        toast.error(error.message || 'Logout failed');
-        throw error;
-      }
+      const { success } = await $fetch<{ success: boolean }>(`/api/auth/logout`, {
+        method: 'POST',
+      });
 
       const eventsLogStore = useEventsLogStore();
 
@@ -288,7 +312,7 @@ export const useAuthStore = defineStore('auth', () => {
       setUser(null);
       setSession(null);
 
-      toast.success('Logged out successfully');
+      toast.show.success('Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -307,9 +331,9 @@ export const useAuthStore = defineStore('auth', () => {
       });
 
       if (error) throw error;
-      toast.success('Password reset link sent to your email');
+      toast.show.success('Password reset link sent to your email');
     } catch (error) {
-      toast.error('Failed to send reset link');
+      toast.show.error('Failed to send reset link');
       console.error('Password reset error:', error);
       throw error;
     } finally {
@@ -327,9 +351,9 @@ export const useAuthStore = defineStore('auth', () => {
       });
 
       if (error) throw error;
-      toast.success('Password updated successfully');
+      toast.show.success('Password updated successfully');
     } catch (error) {
-      toast.error('Failed to update password');
+      toast.show.error('Failed to update password');
       console.error('Password update error:', error);
       throw error;
     } finally {

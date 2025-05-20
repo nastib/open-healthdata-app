@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-export const DataEntryIdSchema = z.number().positive()
+export const EntryIdSchema = z.number().positive()
 
-export const UpdateDataEntrySchema = z.object({
+export const UpdateEntrySchema = z.object({
   variableCode: z.string().optional(),
   categoryCode: z.string().optional(),
   organizationElementCode: z.string().optional(),
@@ -12,7 +12,7 @@ export const UpdateDataEntrySchema = z.object({
   period: z.string().optional()
 })
 
-export const CreateDataEntrySchema = z.object({
+export const CreateEntrySchema = z.object({
   variableCode: z.string(),
   categoryCode: z.string(),
   organizationElementCode: z.string(),
@@ -22,15 +22,15 @@ export const CreateDataEntrySchema = z.object({
   period: z.string().optional()
 })
 
-export const DataEntryQuerySchema = z.object({
+export const EntryQuerySchema = z.object({
   categoryCode: z.string().optional(),
   variableCode: z.string().optional(),
   organizationElementCode: z.string().optional(),
   profileId: z.string().optional(),
   year: z.string().optional(),
   valid: z.string().optional(),
-  limit: z.string().optional(),
-  offset: z.string().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+  offset: z.number().int().nonnegative().optional(),
   sort: z.enum(['asc', 'desc']).optional()
 })
 

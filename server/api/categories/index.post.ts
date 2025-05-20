@@ -1,18 +1,20 @@
 import { defineEventHandler, readBody } from 'h3'
-import { DataCategoryServices } from '~/server/services/data-categories/index.service'
-import { CreateDataCategorySchema, DataCategoryErrorSchemas } from '~/server/schemas/data-categories.schema'
+import { CategoryServices } from '~/server/services/categories/index.service'
+import { CreateCategorySchema, CategoryErrorSchemas } from '~/server/schemas/categories.schema'
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
-  const { createDataCategory } = new DataCategoryServices()
+  const { createCategory } = new CategoryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const categoriesPermissions = new CategoriesPermissions()
+
 
   try {
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
-    if (!getPermissions().canCreateDataCategory(user)) {
+    const user = await getAuthenticatedUserFromJWT(event)
+    if (!await categoriesPermissions.canCreate(user.profile)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to create data categories'
@@ -21,7 +23,7 @@ export default defineEventHandler(async (event) => {
 
     // Validate input
     const body = await readBody(event)
-    const validation = CreateDataCategorySchema.safeParse(body)
+    const validation = CreateCategorySchema.safeParse(body)
     if (!validation.success) {
       throw createError({
         statusCode: 400,
@@ -30,7 +32,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const { data , error } = await createDataCategory(validation.data)
+    const { data , error } = await createCategory(validation.data)
 
     if (!data && error) {
       throw createError({

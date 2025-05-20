@@ -41,6 +41,8 @@ export const UpdateProfileSchema = ProfileSchema.omit({
 
 export const ProfileUserIdSchema = z.string().uuid();
 
+export const ProfileIdSchema = z.number().int().positive();
+
 // export  type Profile = z.infer<typeof ProfileSchema>;
 // export  type CreateProfile = z.infer<typeof CreateProfileSchema>;
 // export  type UpdateProfile = z.infer<typeof UpdateProfileSchema>;

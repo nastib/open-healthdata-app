@@ -1,19 +1,21 @@
 import { defineEventHandler, readBody } from 'h3'
-import { DataEntryServices } from '~/server/services/data-entries/index.service'
-import { DataEntryIdSchema, UpdateDataEntrySchema } from '~/server/schemas/data-entries.schema'
+import { EntryServices } from '~/server/services/entries/index.service'
+import { EntryIdSchema, UpdateEntrySchema } from '~/server/schemas/entries.schema'
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '~/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
-  const { updateDataEntry } = new DataEntryServices()
+  const { updateEntry } = new EntryServices()
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const entriesPermissions = new EntriesPermissions()
+
 
   try {
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
+    const user = await getAuthenticatedUserFromJWT(event)
     const entryId = Number(event.context.params?.id)
-    if (!await getPermissions().canUpdateDataEntry(user, entryId)) {
+    if (!await entriesPermissions.canUpdate(user.profile, entryId)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to update this data entry',
@@ -29,8 +31,8 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
 
     // Validate input
-    const validation = UpdateDataEntrySchema.safeParse(body)
-    const validationId = DataEntryIdSchema.safeParse(id)
+    const validation = UpdateEntrySchema.safeParse(body)
+    const validationId = EntryIdSchema.safeParse(id)
 
     if (!validation.success || !validationId.success) {
       throw createError({
@@ -43,7 +45,7 @@ export default defineEventHandler(async (event) => {
       }) as ErrorWithStatus
     }
     // Update data entry
-    const { data, error } = await updateDataEntry(validationId.data, validation.data)
+    const { data, error } = await updateEntry(validationId.data, validation.data)
 
     if (!data && error) {
       throw createError({

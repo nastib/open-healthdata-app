@@ -1,7 +1,7 @@
 import { toast } from 'vue-sonner'
 import { useColorMode } from '@vueuse/core'
 
-export function useToast() {
+export default function useToast() {
   const mode = useColorMode()
 
   const show = {

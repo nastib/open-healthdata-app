@@ -1,27 +1,25 @@
-import { H3Event } from 'h3'
-import { createError } from 'h3'
-import { CreateDataCategorySchema, UpdateDataCategorySchema, DataCategoryIdSchema, DataCategoryQuerySchema } from '~/server/schemas/data-categories.schema'
+import { CreateCategorySchema, UpdateCategorySchema, CategoryIdSchema, CategoryQuerySchema } from '@/server/schemas/categories.schema'
 import type { DataCategory } from '@prisma/client'
-import prisma from '~/server/utils/prisma'
+import prisma from '@/server/utils/prisma'
 import { z } from 'zod'
-import { ErrorWithStatus } from '~/types'
+import { ErrorWithStatus } from '@/types'
 
 
-interface DataCategoryService {
-  getDataCategories : (query: z.infer< typeof DataCategoryQuerySchema>) => Promise<{ data: DataCategory[] | null, error: ErrorWithStatus | null }>;
-  getDataCategoryById : (id: z.infer< typeof DataCategoryIdSchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
-  createDataCategory : (input: z.infer<typeof CreateDataCategorySchema>) =>  Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
-  updateDataCategory : (id: z.infer<typeof DataCategoryIdSchema>, input: z.infer<typeof UpdateDataCategorySchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
-  deleteDataCategory: (id: z.infer<typeof DataCategoryIdSchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>
+interface CategoryService {
+  fetchCategories : (query: z.infer< typeof CategoryQuerySchema>) => Promise<{ data: DataCategory[] | null, error: ErrorWithStatus | null }>;
+  fetchCategoryById : (id: z.infer< typeof CategoryIdSchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
+  createCategory : (input: z.infer<typeof CreateCategorySchema>) =>  Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
+  updateCategory : (id: z.infer<typeof CategoryIdSchema>, input: z.infer<typeof UpdateCategorySchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>;
+  deleteCategory: (id: z.infer<typeof CategoryIdSchema>) => Promise<{ data: DataCategory | null, error: ErrorWithStatus | null }>
 }
 
-export class DataCategoryServices implements DataCategoryService {
+export class CategoryServices implements CategoryService {
   /**
    * Get a data category by ID
    * @param id
    * @returns
    */
-  async getDataCategoryById(id: z.infer<typeof DataCategoryIdSchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
+  async fetchCategoryById(id: z.infer<typeof CategoryIdSchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
     try {
       const data = await prisma.dataCategory.findUnique({
         where: { id }
@@ -55,10 +53,16 @@ export class DataCategoryServices implements DataCategoryService {
    * @param query
    * @returns
    */
-  async getDataCategories (query: z.infer<typeof DataCategoryQuerySchema>): Promise<{ data: DataCategory[] | null; error: ErrorWithStatus | null }> {
+  async fetchCategories (query: z.infer<typeof CategoryQuerySchema>): Promise<{ data: DataCategory[] | null; error: ErrorWithStatus | null }> {
 
     try {
-      const data = await prisma.dataCategory.findMany()
+      const data = await prisma.dataCategory.findMany({
+        take: query.limit,
+        skip: query.offset,
+        orderBy: {
+          id: query.sort === 'asc' ? 'asc' : 'desc'
+        }
+      })
 
       if (!data) {
         return {
@@ -87,7 +91,7 @@ export class DataCategoryServices implements DataCategoryService {
    * @param input
    * @returns
    */
-  async createDataCategory (input: z.infer<typeof CreateDataCategorySchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
+  async createCategory (input: z.infer<typeof CreateCategorySchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
 
     try {
       const data = await prisma.dataCategory.create({
@@ -121,7 +125,7 @@ export class DataCategoryServices implements DataCategoryService {
    * @param input
    * @returns
    */
-  async updateDataCategory (id: z.infer<typeof DataCategoryIdSchema>, input: z.infer<typeof UpdateDataCategorySchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
+  async updateCategory (id: z.infer<typeof CategoryIdSchema>, input: z.infer<typeof UpdateCategorySchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }> {
 
     try {
       const data = await prisma.dataCategory.update({
@@ -158,7 +162,7 @@ export class DataCategoryServices implements DataCategoryService {
    * @param id
    * @returns
    */
-  async deleteDataCategory (id: z.infer<typeof DataCategoryIdSchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }>  {
+  async deleteCategory (id: z.infer<typeof CategoryIdSchema>): Promise<{ data: DataCategory | null; error: ErrorWithStatus | null }>  {
 
     try {
       const data = await prisma.dataCategory.delete({

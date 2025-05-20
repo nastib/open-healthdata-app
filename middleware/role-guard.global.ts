@@ -8,24 +8,27 @@ export default defineNuxtRouteMiddleware(async to => {
 
   // Only apply on client-side to avoid SSR serialization issues
   if (import.meta.client) {
-    const authStore = useAuthStore();
+     const authStore = useAuthStore();
     const { isAuthenticated, setSession, setUser } = authStore;
     const { initialized, user } = storeToRefs(authStore);
     const { loadSession, isLocalStorageAvailable } = useSessionPersistence();
 
+
     // Try to restore session if not authenticated
     if (!isAuthenticated()) {
+
       if (isLocalStorageAvailable) {
         const persisted = loadSession();
 
         if (persisted?.tokens?.access) {
           try {
+
             const supabase = useSupabaseClient();
             const { data, error } = await supabase.auth.setSession({
               access_token: persisted.tokens.access,
               refresh_token: persisted.tokens.refresh,
             });
-
+            localStorage.removeItem('sb-supabase-auth-token');
             if (!error && data?.session) {
               setSession(data.session);
               setUser(data.session.user);
@@ -57,12 +60,18 @@ export default defineNuxtRouteMiddleware(async to => {
   }
 });
 
+/**
+ * Checking path roles
+ * @param user
+ * @param to
+ * @returns
+ */
 async function pathRolesChecking(user: User | null, to: RouteLocationNormalizedLoaded) {
   const profileStore = useProfileStore();
   if (!profileStore.profile && user?.id) {
     await profileStore.fetchProfile(user?.id);
 
-    localStorage.removeItem('supabase.auth.token');
+    //localStorage.removeItem('supabase.auth.token');
 
     // Check route meta for required roles
     if (to.meta.roles) {
@@ -74,8 +83,10 @@ async function pathRolesChecking(user: User | null, to: RouteLocationNormalizedL
         if (to.path !== '/unauthorized') {
           return navigateTo('/unauthorized');
         }
+
         return;
       }
+      return
     }
   }
 }

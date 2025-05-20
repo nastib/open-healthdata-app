@@ -16,6 +16,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
   const profile = ref<ProfileWithRoles | null>(null)
   const loading = ref(false)
   const error = ref<Error | null>(null)
+  const { loadSession } = useSessionPersistence()
 
   /**
    * Fetch profile by userId
@@ -27,7 +28,10 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
 
     try {
       const { data, error: fetchError } = await $fetch<{data: ProfileWithRoles, error?: any}>(`/api/profile/${userId}`,{
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' +  loadSession()?.tokens.access || ''
+        },
       })
 
       if (fetchError || !data) {
@@ -63,6 +67,9 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
 
       const { data, error: fetchError } = await $fetch<{data: ProfileWithRoles, error?: any}>(`/api/profile`,{
         method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' +  loadSession()?.tokens.access || ''
+        },
         body: {
           userId: authStore.user?.id,
           email: authStore.user?.email,
@@ -130,3 +137,5 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useProfileStore, import.meta.hot))
 }
+
+

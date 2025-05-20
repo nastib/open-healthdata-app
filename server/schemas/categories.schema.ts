@@ -1,9 +1,8 @@
 import { z } from 'zod'
 import { createErrorSchema } from '@/server/utils/error.utils'
-import { type AvatarFallbackProps } from 'reka-ui';
 
 // Base data category schema
-const DataCategoryBaseSchema = z.object({
+const CategoryBaseSchema = z.object({
   code: z.string()
     .min(3, 'Code must be at least 3 characters')
     .max(50, 'Code cannot exceed 50 characters')
@@ -14,23 +13,23 @@ const DataCategoryBaseSchema = z.object({
 })
 
 // Create schema
-export const CreateDataCategorySchema = DataCategoryBaseSchema
+export const CreateCategorySchema = CategoryBaseSchema
 
 // Update schema
-export const UpdateDataCategorySchema = DataCategoryBaseSchema.partial()
+export const UpdateCategorySchema = CategoryBaseSchema.partial()
 
 // ID validation schema
-export const DataCategoryIdSchema = z.number().int().positive()
+export const CategoryIdSchema = z.number().int().positive()
 
 // Query parameters schema
-export const DataCategoryQuerySchema = z.object({
+export const CategoryQuerySchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
   offset: z.number().int().nonnegative().optional(),
   sort: z.enum(['asc', 'desc']).optional()
 })
 
 // Error schemas
-export const DataCategoryErrorSchemas = {
+export const CategoryErrorSchemas = {
   400: createErrorSchema(400, 'Bad Request', 'Invalid input data'),
   403: createErrorSchema(403, 'Forbidden', 'Insufficient permissions'),
   404: createErrorSchema(404, 'Not Found', 'Data category not found'),
@@ -38,13 +37,13 @@ export const DataCategoryErrorSchemas = {
 }
 
 // Response schemas
-export const DataCategoryResponseSchemas = {
-  single: DataCategoryBaseSchema.extend({
-    id: DataCategoryIdSchema,
+export const CategoryResponseSchemas = {
+  single: CategoryBaseSchema.extend({
+    id: CategoryIdSchema,
     createdAt: z.date(),
     updatedAt: z.date()
   }),
-  list: z.array(DataCategoryBaseSchema)
+  list: z.array(CategoryBaseSchema)
 }
 
 // export type DataCategory = z.infer<typeof DataCategoryBaseSchema>

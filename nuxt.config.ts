@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
-  devtools: { enabled: false },
+  devtools: { enabled: true },
   modules: [
     '@pinia/nuxt',
     '@vueuse/nuxt',
@@ -44,15 +44,28 @@ export default defineNuxtConfig({
    ]
   },
   nitro: {
-    preset: 'node-server'
+    preset: 'node-server',
+    // routeRules: {
+    //   '/_nuxt/manifest-route-rule': { middleware: { override: true } }
+    // }
   },
   experimental: {
     componentIslands: true,
+    // routeRules: {
+    //   '/_nuxt/manifest-route-rule': { override: true }
+    // }
   },
   css: ['~/assets/css/main.css'],
   supabase: {
     redirect: false,
-    // Options
+    cookies: {
+      name: 'sb-auth-token',
+      lifetime: 60 * 60 * 8, // 8 hours
+      domain: process.env.NODE_ENV === 'production' ? 'digitlab.app' : 'localhost',
+      path: '/dashboard',
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+      secure: process.env.NODE_ENV === 'production',
+    },
     redirectOptions: {
       login: '/login',
       callback: '/callback',

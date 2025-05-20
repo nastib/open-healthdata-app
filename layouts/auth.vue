@@ -1,5 +1,5 @@
 <template>
-  <div class="max-h-screen">
+  <div class="max-h-screen flex flex-col">
     <AppHeader />
     <main class="flex justify-center overflow-auto transition-[margin-left] duration-300 ease-in-out">
       <div class="container py-6 px-4 md:px-6">

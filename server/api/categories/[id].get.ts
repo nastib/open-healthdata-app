@@ -1,20 +1,22 @@
 import { defineEventHandler } from 'h3'
-import { DataCategoryServices } from '@/server/services/data-categories/index.service'
-import { DataCategoryIdSchema } from '@/server/schemas/data-categories.schema' // Assuming this schema validates just an ID
+import { CategoryServices } from '~/server/services/categories/index.service'
+import { CategoryIdSchema } from '~/server/schemas/categories.schema' // Assuming this schema validates just an ID
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '@/server/utils/auth.server'
 
 export default defineEventHandler(async (event) => {
-  const { getDataCategoryById } = new DataCategoryServices() // Assuming this method exists or will be created
+  const { fetchCategoryById } = new CategoryServices() // Assuming this method exists or will be created
   const authServer = new AuthServer()
-  const { getAuthenticatedUser, getPermissions } = authServer
+  const { getAuthenticatedUserFromJWT } = authServer
+  const categoriesPermissions = new CategoriesPermissions()
+
 
   try {
     const categoryIdString = event.context.params?.id
     const categoryId = Number(categoryIdString)
 
     // Validate input ID
-    const validationId = DataCategoryIdSchema.safeParse(categoryId) // Or a schema specifically for ID
+    const validationId = CategoryIdSchema.safeParse(categoryId) // Or a schema specifically for ID
     if (!validationId.success) {
       throw createError({
         statusCode: 400,
@@ -24,8 +26,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check user permissions
-    const user = await getAuthenticatedUser(event)
-    if (!await getPermissions().canViewDataCategory(user, validationId.data)) { // Pass the validated ID
+    const user = await getAuthenticatedUserFromJWT(event)
+    if (!await categoriesPermissions.canView(user.profile, validationId.data)) { // Pass the validated ID
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden - Insufficient permissions to view this data category'
@@ -33,7 +35,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Fetch data category
-    const { data, error } = await getDataCategoryById(validationId.data)
+    const { data, error } = await fetchCategoryById(validationId.data)
 
     if (error || !data) {
       const serviceError = error as ErrorWithStatus
