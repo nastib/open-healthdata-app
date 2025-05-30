@@ -7,7 +7,7 @@
 
 <script lang="ts" setup>
 import type { DataEntry } from '@prisma/client';
-import { useEntriesStore } from '~/stores/entries-store';
+import { useEntriesStore } from '@/stores/entries.store';
 const { entries } = storeToRefs(useEntriesStore());
 const { fetchEntries } = useEntriesStore();
 

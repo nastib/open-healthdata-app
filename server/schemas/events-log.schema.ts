@@ -20,7 +20,7 @@ export const EventLogQuerySchema = z.object({
 
 export const EventLogUserIdSchema = z.string()
 
-// export type CreateEventLogInput = z.infer<typeof CreateEventLogSchema>
-// export type EventLogQuery = z.infer<typeof EventLogQuerySchema>
-// export type EventLogUserId = z.infer<typeof EventLogUserIdSchema>
+export type CreateEventLogInput = z.infer<typeof CreateEventLogSchema>
+export type EventLogQuery = z.infer<typeof EventLogQuerySchema>
+export type EventLogUserId = z.infer<typeof EventLogUserIdSchema>
 

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { H3Event } from 'h3';
-import { ProfileWithRoles } from '@/types';
+import { ProfileWithRoles } from '@/server/schemas/profile.schema';
 import { ProfileServices } from '@/server/services/profile/index.service';
 import useSupabaseClient from '~/composables/useSupabase';
 import { serverSupabaseUser } from '#supabase/server';

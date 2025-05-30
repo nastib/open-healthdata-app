@@ -23,7 +23,8 @@ export class CategoryServices implements CategoryService {
     try {
       const data = await prisma.dataCategory.findUnique({
         where: { id }
-      });
+      })
+
 
       if (!data) {
         return {
@@ -41,12 +42,10 @@ export class CategoryServices implements CategoryService {
     } catch (err) {
       return {
         data: null,
-        error: createError({ statusCode: 500, message: 'Failed to fetch data category by ID' })
+        error: createError({ statusCode: 500, message: 'Failed to fetch data category by ID' }) as ErrorWithStatus
       };
     }
   }
-
-
 
   /**
    * Get all data categories
@@ -62,7 +61,8 @@ export class CategoryServices implements CategoryService {
         orderBy: {
           id: query.sort === 'asc' ? 'asc' : 'desc'
         }
-      })
+      });
+
 
       if (!data) {
         return {
@@ -80,7 +80,7 @@ export class CategoryServices implements CategoryService {
     } catch (err) {
       return {
         data: null,
-        error: createError({ statusCode: 500, message: 'Failed to fetch data categories' })
+        error: createError({ statusCode: 500, message: 'Failed to fetch data categories' }) as ErrorWithStatus
       }
     }
   }
@@ -96,7 +96,8 @@ export class CategoryServices implements CategoryService {
     try {
       const data = await prisma.dataCategory.create({
         data: input
-      })
+      });
+
 
       if (!data) {
         return {
@@ -114,7 +115,7 @@ export class CategoryServices implements CategoryService {
     } catch (err) {
       return {
         data: null,
-        error: createError({ statusCode: 500, message: 'Failed to create data category' })
+        error: createError({ statusCode: 500, message: 'Failed to create data category' }) as ErrorWithStatus
       }
     }
   }
@@ -131,7 +132,8 @@ export class CategoryServices implements CategoryService {
       const data = await prisma.dataCategory.update({
         where: { id },
         data: input
-      })
+      });
+
 
       if (!data) {
         return {
@@ -150,11 +152,10 @@ export class CategoryServices implements CategoryService {
     } catch (err) {
       return {
         data: null,
-        error: createError({ statusCode: 500, message: 'Failed to update data category' })
+        error: createError({ statusCode: 500, message: 'Failed to update data category' }) as ErrorWithStatus
       }
     }
   }
-
 
   /**
    * Delete a data category
@@ -185,7 +186,7 @@ export class CategoryServices implements CategoryService {
     } catch (err) {
       return {
         data: null,
-        error: createError({ statusCode: 500, message: 'Failed to delete data category' })
+        error: createError({ statusCode: 500, message: 'Failed to delete data category' }) as ErrorWithStatus
       }
     }
   }

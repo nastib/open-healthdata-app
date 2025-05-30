@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
-import type { AuthError, ProfileWithRoles, Role } from '~/types'
+import type { ProfileWithRoles } from '~/server/schemas/profile.schema'
+import type { ErrorWithStatus } from '~/types'
+import type { Role } from '@prisma/client';
 import { toast } from 'vue-sonner';
 
 interface ProfileStore {
   profile: Ref<ProfileWithRoles | null>
   loading: Ref<boolean>
-  error: Ref<Error | null>
+  error: Ref<ErrorWithStatus | null>
   createProfile: () => Promise<void>
   fetchProfile: (userId: string) => Promise<void>
   hasRole: (roleCode: string) => boolean
@@ -15,7 +17,7 @@ interface ProfileStore {
 export const useProfileStore = defineStore('profile', (): ProfileStore => {
   const profile = ref<ProfileWithRoles | null>(null)
   const loading = ref(false)
-  const error = ref<Error | null>(null)
+  const error = ref<ErrorWithStatus | null>(null)
   const { loadSession } = useSessionPersistence()
 
   /**
@@ -27,7 +29,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await $fetch<{data: ProfileWithRoles, error?: any}>(`/api/profile/${userId}`,{
+      const { data, error: fetchError } = await $fetch<{data: ProfileWithRoles, error?: ErrorWithStatus}>(`/api/profile/${userId}`,{
         method: 'GET',
         headers: {
           'Authorization': 'Bearer ' +  loadSession()?.tokens.access || ''
@@ -38,7 +40,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
         error.value = createError({
           statusCode: fetchError?.statusCode || 404,
           statusMessage: fetchError?.statusMessage || 'Profile not found'
-        })
+        }) as ErrorWithStatus
         toast.error(fetchError?.statusMessage || 'Profile not found');
         throw createError(fetchError?.statusMessage || 'Profile not found')
       }
@@ -47,8 +49,8 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
       loading.value = false
 
     } catch (err: unknown) {
-      const message = (err as AuthError)?.message || 'Failed to fetch profile'
-      error.value = createError({ statusCode: 500, statusMessage: message})
+      const message = (err as ErrorWithStatus)?.message || 'Failed to fetch profile'
+      error.value = createError({ statusCode: 500, statusMessage: message}) as ErrorWithStatus
       toast.error(message)
       throw message
     } finally {
@@ -65,7 +67,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
     const authStore = useAuthStore()
     try {
 
-      const { data, error: fetchError } = await $fetch<{data: ProfileWithRoles, error?: any}>(`/api/profile`,{
+      const { data, error: fetchError } = await $fetch<{data: ProfileWithRoles, error?: ErrorWithStatus}>(`/api/profile`,{
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' +  loadSession()?.tokens.access || ''
@@ -82,7 +84,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
         error.value = createError({
           statusCode: fetchError?.statusCode || 404,
           statusMessage: fetchError?.statusMessage || 'Unable to create profile'
-        })
+        }) as ErrorWithStatus
         toast.error(fetchError?.statusMessage || 'Unable to create profile');
         throw createError(fetchError?.statusMessage || 'Unable to create profile')
       }
@@ -90,8 +92,8 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
       loading.value = false
 
     } catch (err: unknown) {
-      const message = (err as AuthError)?.message || 'Failed to create profile'
-      error.value = createError({ statusCode: 500, statusMessage: message})
+      const message = (err as ErrorWithStatus)?.message || 'Failed to create profile'
+      error.value = createError({ statusCode: 500, statusMessage: message}) as ErrorWithStatus
       toast.error(message)
       throw new Error(message)
     } finally {
@@ -105,7 +107,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
    */
   const hasRole = (roleCode: string) => {
     if (!(profile.value as ProfileWithRoles)?.roles) return false
-    return (profile.value as ProfileWithRoles).roles.some((role: Role) => role.code === roleCode)
+    return (profile.value as ProfileWithRoles).roles.some((role) => role.code === roleCode)
   }
 
   /**
@@ -116,7 +118,7 @@ export const useProfileStore = defineStore('profile', (): ProfileStore => {
     if (!(profile.value as ProfileWithRoles)?.roles) return false
 
     return roleCodes.some(roleCode =>
-      (profile.value as ProfileWithRoles)?.roles.some((role: Role) => role.code === roleCode)
+      (profile.value as ProfileWithRoles)?.roles.some((role) => role.code === roleCode)
     )
   }
 

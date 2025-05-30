@@ -6,8 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { DataCategory } from '@/types';
-import { useCategoriesStore } from '@/stores/categories-store';
+import { useCategoriesStore } from '@/stores/categories.store';
 const { categories } = storeToRefs(useCategoriesStore());
 const { fetchCategories } = useCategoriesStore();
 

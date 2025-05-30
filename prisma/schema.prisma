@@ -46,7 +46,7 @@ model DataEntry {
     profileId               Int?
     period                  DateTime? @db.Date
 
-    DataCategory        DataCategory        @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+    dataCategory        DataCategory        @relation(fields: [categoryCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
     organizationElement OrganizationElement @relation(fields: [organizationElementCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
     profile             Profile?            @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
     variable            Variable            @relation(fields: [variableCode], references: [code], onDelete: Cascade, onUpdate: NoAction)

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
-import type { EventsLog, AuthError, EventLog } from '~/types'
+import type { ErrorWithStatus } from '~/types'
+import type { EventsLog } from '@prisma/client';
 import { toast } from 'vue-sonner';
+import { z } from 'zod';
+import { CreateEventLogSchema } from '~/server/schemas/events-log.schema';
 
 /**
  * EventsLogStore interface
@@ -14,8 +17,8 @@ import { toast } from 'vue-sonner';
 interface EventsLogStore {
   eventsLog: Ref<EventsLog | EventsLog[] | null>
   loading: Ref<boolean>
-  error: Ref<Error | null>
-  createEventsLog: (event: EventLog) => Promise<void>
+  error: Ref<ErrorWithStatus | null>
+  createEventsLog: (event: z.infer<typeof CreateEventLogSchema>) => Promise<void>
   fetchEventsLog: (userId: string) => Promise<void>
 }
 
@@ -23,14 +26,14 @@ interface EventsLogStore {
 export const useEventsLogStore = defineStore('events-log', (): EventsLogStore => {
   const eventsLog = ref<EventsLog | EventsLog[] | null>(null)
   const loading = ref(false)
-  const error = ref<Error | null>(null)
+  const error = ref<ErrorWithStatus | null>(null)
 
   /**
    * Create a new event log
    * @param event
    * @returns
    */
-  const createEventsLog = async (eventLog: EventLog) => {
+  const createEventsLog = async (eventLog: z.infer<typeof CreateEventLogSchema>) => {
     loading.value = true
     error.value = null
     try {
@@ -49,7 +52,7 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
         error.value = createError({
           statusCode: fetchError?.statusCode || 404,
           statusMessage: fetchError?.statusMessage || 'Failed to create event log'
-        })
+        }) as ErrorWithStatus
         toast.error(fetchError?.statusMessage || 'Failed to create event log');
         throw createError(fetchError?.statusMessage || 'Failed to create event log')
       }
@@ -58,8 +61,8 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
       loading.value = false
 
     } catch (err: unknown) {
-      const message = (err as AuthError)?.message || 'Failed to create event log'
-      error.value = createError( {statusCode: 404, message: 'Profile not found'})
+      const message = (err as ErrorWithStatus)?.message || 'Failed to create event log'
+      error.value = createError( {statusCode: 404, message: 'Profile not found'}) as ErrorWithStatus
       toast.error(message)
       throw message
     } finally {
@@ -76,7 +79,7 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
     loading.value = true
     error.value = null
     try {
-      const { data, error: fetchError } = await $fetch<{data: EventLog[], error?: any}>(`/api/events-log/${userId}`,{
+      const { data, error: fetchError } = await $fetch<{data: EventsLog[], error?: any}>(`/api/events-log/${userId}`,{
         method: 'GET'
       })
 
@@ -84,7 +87,7 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
         error.value = createError({
           statusCode: fetchError?.statusCode || 404,
           statusMessage: fetchError?.statusMessage || `${userId} events logs not found`
-        })
+        }) as ErrorWithStatus
         toast.error(fetchError?.statusMessage || `${userId} events logs not found`);
         throw createError(fetchError?.statusMessage || `${userId} events logs not found`)
       }
@@ -94,8 +97,8 @@ export const useEventsLogStore = defineStore('events-log', (): EventsLogStore =>
       loading.value = false
 
     } catch (err: unknown) {
-      const message = (err as AuthError)?.message || 'Failed to fetch events logs'
-      error.value = createError( {statusCode: 404, message})
+      const message = (err as ErrorWithStatus)?.message || 'Failed to fetch events logs'
+      error.value = createError( {statusCode: 404, message}) as ErrorWithStatus
       toast.error(message)
       throw new Error(message)
     } finally {

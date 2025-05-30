@@ -3,8 +3,11 @@ import { ref } from 'vue';
 import type { User, Session } from '@supabase/supabase-js';
 import useSupabaseClient from '@/composables/useSupabase';
 import { useSessionPersistence } from '@/composables/useSessionPersistence';
-import type { EventLog } from '@/types';
+import type { CreateEventLogInput as EventLog } from '~/server/schemas/events-log.schema';
 import { EventTypes } from '@/utils/index';
+import { useRouter } from 'vue-router';
+import { useProfileStore } from './profile.store'; // Assuming profile.store.ts exists
+import { useEventsLogStore } from './events-log.store'; // Assuming events-log.store.ts exists
 
 interface AuthStore {
   user: Ref<User | null>;
@@ -55,7 +58,8 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
   // Dependencies
   const supabase = useSupabaseClient();
   const { saveSession, loadSession, clearSession } = useSessionPersistence();
-  const toast   = useToast();
+  const toast = useToast();
+  const router = useRouter();
 
   // Core functions
   const setUser = (userCurrent: User | null) => {
@@ -86,6 +90,11 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
   };
 
   // Authentication methods
+  /**
+   * Basic Login
+   * @param credentials
+   * @returns
+   */
   const login = async (credentials: Credentials) => {
     if (!checkRateLimit()) return;
 
@@ -161,6 +170,11 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
     }
   };
 
+  /**
+   * OAuth2 Login with google
+   * @param rememberMe
+   * @returns
+   */
   const loginWithGoogle = async (rememberMe = false) => {
     if (!checkRateLimit()) return;
 
@@ -190,6 +204,9 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
     }
   };
 
+  /**
+   * Refresh Session
+   */
   const refreshSession = async () => {
     try {
       const { data, error } = await supabase.auth.refreshSession();
@@ -205,6 +222,7 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
     } catch (error) {
       toast.show.error('Session refresh error: ' + (error as Error).message);
       console.error('Session refresh error:', error);
+      await logout(); // Force logout if session refresh fails
       throw error;
     }
   };
@@ -234,6 +252,11 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
     }
   };
 
+  /**
+   * Signup with credentials
+   * @param credentials
+   * @returns
+   */
   const signup = async (credentials: Credentials) => {
     if (!checkRateLimit()) return;
 
@@ -287,17 +310,27 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
     }
   };
 
+  /**
+   * Logout
+   */
   const logout = async () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
+
+      // Clear all local session data
       clearSession();
+      localStorage.clear(); // Clear localStorage
+      sessionStorage.clear(); // Clear sessionStorage
+      // For IndexedDB, you might need a more specific library or manual deletion
+      // For in-memory state, setting user and session to null handles it
 
       const { success } = await $fetch<{ success: boolean }>(`/api/auth/logout`, {
         method: 'POST',
       });
 
       const eventsLogStore = useEventsLogStore();
+      const profileStore = useProfileStore();
 
       const eventLog = {
         eventType: EventTypes.LOGOUT,
@@ -309,17 +342,75 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
 
       await eventsLogStore.createEventsLog(eventLog);
 
+      // Clear Pinia stores
       setUser(null);
       setSession(null);
+      //profileStore.$reset(); // Reset profile store
 
       toast.show.success('Logged out successfully');
+      router.push('/auth/login?message=session_expired');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.show.error('Logout failed: ' + (error as Error).message);
       throw error;
     } finally {
       setLoading(false);
     }
   };
+
+  const checkSessionExpiration = async () => {
+    if (!session.value || !session.value.expires_at) return;
+
+    const expiresAtMs = session.value.expires_at * 1000;
+    const now = Date.now();
+
+    if (now >= expiresAtMs) {
+      console.warn('Session expired. Logging out...');
+      await logout();
+      toast.show.error('Your session has expired. Please log in again.');
+    }
+  };
+
+  // Proactive check: Set up a periodic check (e.g., every minute)
+  let sessionCheckInterval: NodeJS.Timeout | null = null;
+  if (typeof window !== 'undefined') {
+    sessionCheckInterval = setInterval(checkSessionExpiration, 60 * 1000); // Check every minute
+  }
+
+  // Reactive check: Intercept API responses for 401 (This part would typically be in a Nuxt plugin or a global fetch interceptor)
+  // For now, we'll add a basic check within initAuth and refreshSession.
+  // A more robust solution would involve a Nuxt plugin to intercept all $fetch calls.
+
+  // Listen for Supabase auth state changes
+  supabase.auth.onAuthStateChange((event, newSession) => {
+    if (event === 'SIGNED_OUT') {
+      if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+        sessionCheckInterval = null;
+      }
+      clearSession();
+      setUser(null);
+      setSession(null);
+      router.push('/auth/login?message=logged_out');
+    } else if (newSession) {
+      setSession(newSession);
+      setUser(newSession.user);
+      saveSession({
+        user: newSession.user,
+        tokens: {
+          access: newSession.access_token,
+          refresh: newSession.refresh_token,
+        },
+        preferences: {},
+        lastActivity: Date.now(),
+        expiresAt: Date.now() + newSession.expires_in * 1000,
+      });
+      if (sessionCheckInterval === null && typeof window !== 'undefined') {
+        sessionCheckInterval = setInterval(checkSessionExpiration, 60 * 1000);
+      }
+    }
+  });
+
 
   const resetPassword = async (email: string) => {
     if (!checkRateLimit()) return;
@@ -387,10 +478,12 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
               setSession(data.session);
               setUser(data.session.user);
               initialized.value = true;
+              await checkSessionExpiration(); // Check expiration after restoring session
               return;
             }
           } catch (e) {
             console.warn('Failed to restore session from storage', e);
+            clearSession(); // Clear invalid persisted session
           }
         }
 
@@ -399,6 +492,7 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
 
         if (error) {
           console.error('Session initialization error:', error);
+          await logout(); // Force logout if getSession fails
           throw error;
         }
 
@@ -422,6 +516,10 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
             await profileStore.fetchProfile(data.session.user.id);
           }
           localStorage.removeItem('supabase.auth.token');
+          await checkSessionExpiration(); // Check expiration after getting current session
+        } else {
+          // If no session is found, ensure user is logged out
+          await logout();
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -460,7 +558,7 @@ export const useAuthStore = defineStore('auth', (): AuthStore => {
     checkRateLimit,
     updatePassword,
     resetPassword,
-  };
+   };
 });
 
 // make sure to pass the right store definition, `useAuthStore` in this case.

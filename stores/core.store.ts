@@ -23,17 +23,17 @@ interface Stat {
     icon: string;
 }
 
-export const useCoreStore = defineStore('store',() => {
+export const useCoreStore = defineStore('core-store',() => {
 
   // Core States
   // Side menu links and roles guards
   const menuLinks= ref<NavLink[]>([
     { path: '/dashboard', label: 'Dashboard', icon: 'lucide:layout-dashboard', roles: ['ADMIN', 'USER'] },
     { path: '/categories', label: 'Categories', icon: 'lucide:folder', roles: ['ADMIN'] },
-    { path: '/organization', label: 'Organisations', icon: 'lucide:building', roles: ['ADMIN', 'USER'] },
-    { path: '/source', label: 'Source de données', icon: 'lucide:clipboard-type', roles: ['ADMIN', 'USER'] },
+    { path: '/organizations', label: 'Organisations', icon: 'lucide:building', roles: ['ADMIN', 'USER'] },
+    { path: '/sources', label: 'Source de données', icon: 'lucide:clipboard-type', roles: ['ADMIN', 'USER'] },
     { path: '/variables', label: 'Variables', icon: 'lucide:variable', roles: ['ADMIN', 'USER'] },
-    { path: '/indicator', label: 'Indicateurs', icon: 'lucide:area-chart', roles: ['ADMIN', 'USER'] },
+    { path: '/indicators', label: 'Indicateurs', icon: 'lucide:area-chart', roles: ['ADMIN', 'USER'] },
     { path: '/entries', label: 'Saisie des données', icon: 'lucide:database', roles: ['ADMIN', 'USER'] },
   ]);
 

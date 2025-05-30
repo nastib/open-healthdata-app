@@ -50,7 +50,7 @@ export default defineNuxtConfig({
     // }
   },
   experimental: {
-    componentIslands: true,
+    componentIslands: false, // Disable experimental component islands
     // routeRules: {
     //   '/_nuxt/manifest-route-rule': { override: true }
     // }

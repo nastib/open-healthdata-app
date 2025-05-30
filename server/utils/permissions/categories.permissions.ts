@@ -1,5 +1,5 @@
 import { ProfileServices } from '~/server/services/profile/index.service';
-import { ProfileWithRoles } from '~/types';
+import { ProfileWithRoles } from '@/server/schemas/profile.schema';
 import prisma from '@/server/utils/prisma';
 import type { DataEntry } from '@prisma/client';
 

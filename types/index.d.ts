@@ -1,30 +1,40 @@
-/**
- * This section contains TypeScript import types from the Prisma client
- */
-import type { Profile, Role, EventsLog, DataCategory } from '@prisma/client'
-import type { User } from '@supabase/supabase-js';
+import type { JsonValue } from '@prisma/client/runtime/library'
 
-/**
- * This section contains TypeScript types and interfaces used throughout the application.
- */
-export type { Profile, Role, EventsLog, DataCategory } from '@prisma/client'
+// export interface Indicator {
+//   id: string
+//   createdAt: Date | null
+//   updatedAt: Date
+//   code: string
+//   designation: string | null
+//   type: JsonValue
+//   dataSourceId: number
+//   categoryCode: string
+//   frequency: string | null
+//   level: string | null
+// }
 
-export interface AuthError extends Error {
-  message: string,
-  status?: number
+// export interface DataSource {
+//   id: string
+//   createdAt: Date | null
+//   updatedAt: Date
+//   code: string
+//   name: string
+//   description: string | null
+//   url: string | null
+// }
+
+export interface ErrorWithStatus {
+  statusCode: number
+  statusMessage: string
+  message?: string
+  data?: unknown
+  name?: string
 }
 
-export type ProfileWithRoles = Profile & {
-  roles: Role[],
-  user: User
-}
-
-export type EventLog = EventsLog
-
-export interface ErrorWithStatus extends Error {
-  statusCode?: number
-  statusMessage?: string
-  data?: any
-}
-
-
+// export interface Variable {
+//   id: string
+//   name: string
+//   description: string | null
+//   createdAt: Date
+//   updatedAt: Date
+// }

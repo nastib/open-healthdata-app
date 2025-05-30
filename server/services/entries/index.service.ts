@@ -1,12 +1,12 @@
 import prisma from '@/server/utils/prisma'
-import type { DataEntry } from '@prisma/client'
 import type { ErrorWithStatus } from '@/types/index'
 import { z } from 'zod'
+import type {  DataEntry } from '@prisma/client'
 import {
   CreateEntrySchema,
   UpdateEntrySchema,
   EntryIdSchema,
-  EntryQuerySchema
+  EntryQuerySchema,
 } from '@/server/schemas/entries.schema'
 
 interface EntryService {
@@ -29,11 +29,12 @@ export class EntryServices implements EntryService {
       const data = await prisma.dataEntry.findUnique({
         where: { id },
         include: {
-          DataCategory: true,
+          dataCategory: true,
           organizationElement: true,
-          variable: true
+          variable: true,
+          profile: true
         }
-      });
+      })
 
       if (!data) {
         return {
@@ -71,18 +72,22 @@ export class EntryServices implements EntryService {
 
     try {
       const data = await prisma.dataEntry.findMany({
+        where: {
+          categoryCode: query.search ? { contains: query.search } : undefined
+        },
         take: query.limit,
         skip: query.offset,
         orderBy: {
           id: query.sort === 'asc' ? 'asc' : 'desc'
         },
         include: {
-          DataCategory: true,
+          dataCategory: true,
           organizationElement: true,
           profile: true,
           variable: true
         }
       })
+
 
       if (!data) {
         return {
@@ -131,7 +136,7 @@ export class EntryServices implements EntryService {
           period: input.period ? new Date(input.period) : undefined
         },
         include: {
-          DataCategory: true,
+          dataCategory: true,
           organizationElement: true,
           variable: true
         }
@@ -188,11 +193,12 @@ export class EntryServices implements EntryService {
           period: input.period ? new Date(input.period) : undefined
         },
         include: {
-          DataCategory: true,
+          dataCategory: true,
           organizationElement: true,
           variable: true
         }
       })
+
 
       if (!data) {
         return {
@@ -235,7 +241,7 @@ export class EntryServices implements EntryService {
       const data = await prisma.dataEntry.delete({
         where: { id },
         include: {
-          DataCategory: true,
+          dataCategory: true,
           organizationElement: true,
           variable: true
         }

@@ -25,7 +25,8 @@ export const CategoryIdSchema = z.number().int().positive()
 export const CategoryQuerySchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
   offset: z.number().int().nonnegative().optional(),
-  sort: z.enum(['asc', 'desc']).optional()
+  sort: z.enum(['asc', 'desc']).optional(),
+  search: z.string().optional(),
 })
 
 // Error schemas
@@ -46,8 +47,8 @@ export const CategoryResponseSchemas = {
   list: z.array(CategoryBaseSchema)
 }
 
-// export type DataCategory = z.infer<typeof DataCategoryBaseSchema>
-// export type DataCategoryQuery = z.infer<typeof DataCategoryQuerySchema>
-// export type DataCategoryId = z.infer<typeof DataCategoryIdSchema>
-// export type CreateDataCategoryInput = z.infer<typeof CreateDataCategorySchema>
-// export type UpdateDataCategoryInput = z.infer<typeof UpdateDataCategorySchema>
+export type DataCategory = z.infer<typeof CategoryBaseSchema>
+export type DataCategoryQuery = z.infer<typeof CategoryQuerySchema>
+export type DataCategoryId = z.infer<typeof CategoryIdSchema>
+export type CreateDataCategoryInput = z.infer<typeof CreateCategorySchema>
+export type UpdateDataCategoryInput = z.infer<typeof UpdateCategorySchema>

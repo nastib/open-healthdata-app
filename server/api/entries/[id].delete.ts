@@ -4,11 +4,13 @@ import { EntryServices } from '@/server/services/entries/index.service'
 import type { ErrorWithStatus } from '@/types/index'
 import { AuthServer } from '~/server/utils/auth.server'
 
+const { deleteEntry } = new EntryServices()
+const entriesPermissions = new EntriesPermissions()
+
+
 export default defineEventHandler(async (event) => {
-  const { deleteEntry } = new EntryServices()
   const authServer = new AuthServer()
   const { getAuthenticatedUserFromJWT } = authServer
-  const entriesPermissions = new EntriesPermissions()
 
    try {
     // Check user permissions
